@@ -1,14 +1,16 @@
 # RW-API Proxy
 
 API request proxy to a backend service.
+
 License: GPLv3
-Not yet fully stable.
+
+Not yet fully stable. Documentation is work-in-progress.
 
 The purpose of the API proxy is it remove the need for the client application to know any backend
 specific details so that the backend can be changed to some other system or service without
 changes to the client software itself. 
 
-This is to be used togeather with the rw-client application available also on github at:
+This is to be used together with the rw-client application, also available on github at:
 * https://github.com/DigiTurku/rw-client
 
 ## Requirements

@@ -1,0 +1,12 @@
+[Generic]
+api_base_url=http://localhost/v3
+drupal_url=http://localhost/d7/api/v3
+drupal_image_public_base=http://localhost/d7/
+drupal_image_private_base=http://localhost/d7/system
+news_url=http://localhost/appnews.xml
+products_url=http://localhost/productslatest.xml
+
+[MobileApp]
+version=7
+apk=appname-0.0.7-release-signed.apk
+

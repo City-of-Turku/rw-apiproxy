@@ -27,19 +27,26 @@ $this->be=$be;
 $this->appdata=$app;
 $h=getallheaders();
 
-if (!empty($h['X-AuthenticationKey'])) {
-	// XXX: Check against authorized client keys
-	$this->isClientAuth=true;
-} else {
-	$this->isClientAuth=false;
-	$this->isAuth=false;
+if (!$this->checkAuthenticationKey($h))
 	return;
+
+if (empty($h['X-Auth-Token']))
+	return;
+
+$this->token=$h['X-Auth-Token'];
+$this->isAuth=$this->checkAuthToken();
 }
 
-if (!empty($h['X-Auth-Token'])) {
-	$this->token=$h['X-Auth-Token'];
-	$this->isAuth=$this->checkAuthToken();
+private function checkAuthenticationKey(array $h)
+{
+// XXX: Check against authorized client keys
+if (!empty($h['X-AuthenticationKey'])) {
+	$this->isClientAuth=true;
+	return true;
 }
+$this->isClientAuth=false;
+$this->isAuth=false;
+return false;
 }
 
 /**

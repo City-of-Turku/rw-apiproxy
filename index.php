@@ -31,7 +31,7 @@ if(!function_exists('hash_equals')) {
 }
 
 require('vendor/autoload.php');
-require('lib/DrupalServiceAPIClient.class.php');
+require('lib/drupal/DrupalServiceAPIClient.class.php');
 require('lib/Syslog.php');
 require('lib/Response.class.php');
 require('lib/LoginHandler.class.php');
@@ -51,14 +51,23 @@ $api=$config['Generic'];
 
 $appdata=$config['MobileApp'];
 
-$drupal = new DrupalServiceAPIClient($api['drupal_url']);
-$drupal->set_auth_type(AUTH_SESSION);
-// $drupal->set_debug(true);
+switch ($appdata['backend']) {
+	case 'drupal':
+		$be=new DrupalServiceAPIClient($api['drupal_url']);
+		$be->set_auth_type(AUTH_SESSION);
+		// $be->set_debug(true);
+	break;
+	case 'prestashop':
+		$be=new PrestashopServiceAPIClient($api['prestashop_url']);
+	break;
+	default:
+		die('Backend not set or invalid');
+}
 
-$l = new LoginHandler($api, $appdata, $drupal);
+$l = new LoginHandler($api, $appdata, $be);
 $p = new ProductHandler($l);
-$loc = new LocationHandler($l, $drupal);
-$order = new OrderHandler($l, $drupal);
+$loc = new LocationHandler($l, $be);
+$order = new OrderHandler($l, $be);
 $app = new ApplicationHandler($l, $appdata);
 $news = new NewsHandler($api);
 

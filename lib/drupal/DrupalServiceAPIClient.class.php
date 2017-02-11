@@ -258,7 +258,25 @@ $ud=$this->user->user;
 $this->session_cookie=$this->user->session_name.'='.$this->user->sessid;
 $this->csrf_token=$this->user->token;
 $this->uid=$this->user->user->uid;
-return $this->user;
+
+$ut=sprintf('%s:%s:%s:%d', $this->user->sessid, $this->user->session_name, $this->csrf, $this->uid);
+
+$u=array();
+$u['apitoken']=$ut;
+$u['username']=$ur->user->name;
+$u['uid']=$ur->user->uid;
+$u['created']=$ur->user->created;
+$u['access']=$ur->user->access;
+$u['email']=$ur->user->mail;
+$u['roles']=$ur->user->roles;
+if (property_exists($ur->user, "field_name")) {
+	// XXX
+}
+if (property_exists($ur->user, "field_image")) {
+	// XXX
+}
+
+return $u;
 }
 
 public function set_session_data($id, $name, $token, $uid)

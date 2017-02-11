@@ -140,35 +140,21 @@ if (empty($r['username']) || empty($r['password'])) {
 	throw new ResponseException('Login operation missing required parameters', 400);
 }
 
-// XXX: Authenticate with be
 $username=$r['username'];
 $password=$r['password'];
 
 try {
 	$this->be->set_auth($username, $password);
-	$ur=$this->be->login();
-	$u=array();
-	// Construct a login key from session data
-	$t=sprintf('%s:%s:%s:%d', $ur->sessid, $ur->session_name, $ur->token, $ur->user->uid);
+	$u=$this->be->login();
+	$u['apitoken']=$this->encrypt_token($u['apitoken']);
 
-	$u['apitoken']=$this->encrypt_token($t);
-	$u['username']=$ur->user->name;
-	$u['uid']=$ur->user->uid;
-	$u['created']=$ur->user->created;
-	$u['access']=$ur->user->access;
-	$u['email']=$ur->user->mail;
-	$u['roles']=$ur->user->roles;
-	if (property_exists($ur->user, "field_name")) {
-		// XXX
-	}
-	if (property_exists($ur->user, "field_image")) {
-		// XXX
-	}
-
-	$u['app']=array(
+	// Fill in the current application data, if set
+	if (is_array($this->appdata)) {
+		$u['app']=array(
 		'version'=>$this->appdata['version'],
 		'package'=>$this->appdata['apk']
 		);
+	}
 
 	Flight::json(Response::data(200, 'Login OK', 'login', $u));
 } catch (Exception $e) {

@@ -14,12 +14,10 @@ private $umapr;
 private $catmap;
 private $validSort=array('title','sku','date');
 
-public function __construct(LoginHandler $l)
+public function __construct(LoginHandler $l, &$be)
 {
-global $drupal;
-
 $this->l=$l;
-$this->api=$drupal;
+$this->api=$be;
 
 // Product attributes key=>value mappings
 $this->cmap=json_decode(file_get_contents('colormap.json'), true);
@@ -430,8 +428,6 @@ $this->browseProducts(false, false, $filter, $sortby);
  */
 protected Function browseProducts($page=false, $limit=false, array $filter=null, array $sortby=null)
 {
-global $drupal;
-
 $r=Flight::request()->query;
 $ip=$page===false ? (int)$r['page'] : $page;
 $a=$limit===false ? (int)$r['amount'] : $limit;
@@ -442,7 +438,7 @@ if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
 
 $ps=array();
 try {
-	$data=$drupal->index_products($ip, $a, null, $filter, $sortby);
+	$data=$this->api->index_products($ip, $a, null, $filter, $sortby);
 	foreach ($data as $po) {
 		$ps[$po->sku]=$this->drupalJSONtoProduct($po);
 	}

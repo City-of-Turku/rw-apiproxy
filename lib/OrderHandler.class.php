@@ -3,12 +3,12 @@
 class OrderHandler
 {
 private $l;
-private $drupal;
+private $be;
 
-public function __construct(LoginHandler &$l, &$drupal)
+public function __construct(LoginHandler &$l, &$be)
 {
 $this->l=$l;
-$this->drupal=$drupal;
+$this->be=$be;
 }
 
 public Function orders()
@@ -26,7 +26,7 @@ if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
 
 $ps=array();
 try {
-	$data=$this->drupal->index_orders($ip, $a, filter);
+	$data=$this->be->index_orders($ip, $a, filter);
 	// XXX: Re-format
 	foreach ($data as $oid => $po) {
 		$ps[$oid]=$po;

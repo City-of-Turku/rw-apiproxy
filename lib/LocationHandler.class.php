@@ -3,17 +3,17 @@
 class LocationHandler
 {
 private $l;
-private $drupal;
+private $be;
 
-public function __construct(LoginHandler &$l, &$drupal)
+public function __construct(LoginHandler &$l, &$be)
 {
 $this->l=$l;
-$this->drupal=$drupal;
+$this->be=$be;
 }
 
 public function locations()
 {
-$tmp=$this->drupal->retrieve_view('locations');
+$tmp=$this->be->retrieve_view('locations');
 if (!$tmp)
 	return Flight::json(Response::data(500, 'Failed to retrieve locations', 'locations'), 500);
 

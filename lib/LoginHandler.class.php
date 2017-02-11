@@ -19,11 +19,11 @@ private $session_token;
 //
 private $config;
 private $appdata;
-private $drupal;
+private $be;
 
-public function __construct(array $config, array $app, &$drupal)
+public function __construct(array $config, array $app, &$be)
 {
-$this->drupal=$drupal;
+$this->be=$be;
 $this->appdata=$app;
 $h=getallheaders();
 
@@ -68,8 +68,6 @@ public function getSession()
  */
 private function setAuthdata($data)
 {
-global $drupal;
-
 if (!is_string($data) || $data===false)
 	return false;
 
@@ -82,7 +80,7 @@ $this->uid=(int)$s[3];
 if ($this->uid<1)
 	return false;
 
-$drupal->set_session_data($this->session_id, $this->session_name, $this->session_token, $this->uid);
+$this->be->set_session_data($this->session_id, $this->session_name, $this->session_token, $this->uid);
 
 return true;
 }
@@ -129,21 +127,19 @@ return base64_encode($hash.$iv.$tmp);
  */
 public function login()
 {
-global $drupal;
-
 $r=Flight::request()->data;
 
 if (empty($r['username']) || empty($r['password'])) {
 	throw new ResponseException('Login operation missing required parameters', 400);
 }
 
-// XXX: Authenticate with drupal
+// XXX: Authenticate with be
 $username=$r['username'];
 $password=$r['password'];
 
 try {
-	$drupal->set_auth($username, $password);
-	$ur=$drupal->login();
+	$this->be->set_auth($username, $password);
+	$ur=$this->be->login();
 	$u=array();
 	// Construct a login key from session data
 	$t=sprintf('%s:%s:%s:%d', $ur->sessid, $ur->session_name, $ur->token, $ur->user->uid);
@@ -188,9 +184,7 @@ Flight::json(Response::data(200, 'User data', 'user', array()));
 
 public function user($uid)
 {
-global $drupal;
-
-$u=$drupal->retrieve_user($uid);
+$u=$this->be->retrieve_user($uid);
 Flight::json(Response::data(200, 'User data', 'user', $u));
 }
 

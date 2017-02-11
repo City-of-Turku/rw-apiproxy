@@ -5,6 +5,7 @@ drupal_image_public_base=http://localhost/d7/
 drupal_image_private_base=http://localhost/d7/system
 news_url=http://localhost/appnews.xml
 products_url=http://localhost/productslatest.xml
+backend=
 
 [MobileApp]
 version=7

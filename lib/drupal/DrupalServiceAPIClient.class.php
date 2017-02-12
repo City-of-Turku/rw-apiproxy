@@ -1,6 +1,8 @@
 <?php
 /**
  *
+ * Low-Level Drupal service methods
+ *
  * This code is released under the GNU General Public License.
  *
  */
@@ -263,12 +265,12 @@ $ut=sprintf('%s:%s:%s:%d', $this->user->sessid, $this->user->session_name, $this
 
 $u=array();
 $u['apitoken']=$ut;
-$u['username']=$ur->user->name;
-$u['uid']=$ur->user->uid;
-$u['created']=$ur->user->created;
-$u['access']=$ur->user->access;
-$u['email']=$ur->user->mail;
-$u['roles']=$ur->user->roles;
+$u['username']=$ud->name;
+$u['uid']=$this->uid;
+$u['created']=$ud->created;
+$u['access']=$ud->access;
+$u['email']=$ud->mail;
+$u['roles']=$ud->roles;
 if (property_exists($ur->user, "field_name")) {
 	// XXX
 }

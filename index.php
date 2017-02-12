@@ -13,9 +13,9 @@
  */
 
 // Enable for development only
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
-// error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 if(!function_exists('hash_equals')) {
   function hash_equals($str1, $str2) {
@@ -51,14 +51,16 @@ $api=$config['Generic'];
 
 $appdata=$config['MobileApp'];
 
-switch ($appdata['backend']) {
+switch ($api['backend']) {
 	case 'drupal':
-		$be=new DrupalServiceAPIClient($api['drupal_url']);
+		$bc=$config['Drupal'];
+		$be=new DrupalServiceAPIClient($bc['url']);
 		$be->set_auth_type(AUTH_SESSION);
 		// $be->set_debug(true);
 	break;
 	case 'prestashop':
-		$be=new PrestashopServiceAPIClient($api['prestashop_url']);
+		$bc=$config['Prestashop'];
+		$be=new PrestashopServiceAPIClient($bc['url']);
 	break;
 	default:
 		die('Backend not set or invalid');

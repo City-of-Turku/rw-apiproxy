@@ -12,6 +12,8 @@
  *
  */
 
+date_default_timezone_set('Europe/Helsinki');
+
 // Enable for development only
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -74,7 +76,7 @@ switch ($api['backend']) {
 }
 
 $l = new LoginHandler($api, $appdata, $be);
-$p = new ProductHandler($l);
+$p = new ProductHandler($l, $be);
 $loc = new LocationHandler($l, $be);
 $order = new OrderHandler($l, $be);
 $app = new ApplicationHandler($l, $appdata);

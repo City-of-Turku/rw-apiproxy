@@ -31,8 +31,17 @@ if(!function_exists('hash_equals')) {
 }
 
 require('vendor/autoload.php');
-require('lib/drupal/DrupalServiceAPIClient.class.php');
 require('lib/Syslog.php');
+require('lib/BackendActionsInterface.class.php');
+
+// Drupal backend API
+require('lib/drupal/DrupalServiceAPIClient.class.php');
+require('lib/drupal/DrupalActions.class.php');
+
+// Prestashop backend API
+require('lib/prestashop/PrestashopActions.class.php');
+
+// Handlers
 require('lib/Response.class.php');
 require('lib/LoginHandler.class.php');
 require('lib/ProductHandler.class.php');
@@ -54,13 +63,11 @@ $appdata=$config['MobileApp'];
 switch ($api['backend']) {
 	case 'drupal':
 		$bc=$config['Drupal'];
-		$be=new DrupalServiceAPIClient($bc['url']);
-		$be->set_auth_type(AUTH_SESSION);
-		// $be->set_debug(true);
+		$be=new DrupalActions($bc['url']);
 	break;
 	case 'prestashop':
 		$bc=$config['Prestashop'];
-		$be=new PrestashopServiceAPIClient($bc['url']);
+		$be=new PrestashopActions($bc, array());
 	break;
 	default:
 		die('Backend not set or invalid');

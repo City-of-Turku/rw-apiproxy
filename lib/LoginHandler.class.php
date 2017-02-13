@@ -21,7 +21,7 @@ private $config;
 private $appdata;
 private $be;
 
-public function __construct(array $config, array $app, &$be)
+public function __construct(array $config, array $app, BackendActionsInterface &$be)
 {
 $this->be=$be;
 $this->appdata=$app;

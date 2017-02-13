@@ -1,12 +1,14 @@
 <?php
 
-abstract class BackendInterface
+abstract class BackendActionsInterface
 {
 // Authentication
 abstract public function set_auth($username, $password);
 abstract public function get_user();
 abstract public function login();
 abstract public function logout();
+
+abstract public function auth_apikey($key);
 
 // Locations
 abstract public function get_locations();
@@ -15,8 +17,8 @@ abstract public function get_locations();
 abstract public function get_categories();
 
 // Files (images)
-abstract public function upload_file($file, $filename=null, $manage=false);
-abstract public function view_file($fid, $data=false, $styles=false);
+abstract public function upload_file($file, $filename=null);
+abstract public function view_file($fid, $data=false);
 
 // Products
 abstract public function create_product($type, $sku, $title, $price);

@@ -18,6 +18,9 @@ protected $source_id=0; // Supplier or manufacturer
 protected $cmap;
 protected $source;
 
+protected $username;
+protected $password;
+
 // What are we using
 const SRC_SUPPLIER=1;
 const SRC_MANUFACTURER=2;
@@ -46,19 +49,27 @@ if ($this->db->connect_error)
 	throw new Exception('DB Failure '.$this->db->connect_error, $this->db->connect_errno);
 }
 
-// Authentication
 public function set_auth($username, $password)
 {
+if (!is_string($username))
+	throw new Exception('Invalid username', 500);
+if (!is_string($password))
+	throw new Exception('Invalid password', 500);
+$this->username=$username;
+$this->password=$password;
 }
 
 public function get_user()
 {
 }
+
 public function login()
 {
 }
+
 public function logout()
 {
+return true;
 }
 
 public function auth_apikey($key)

@@ -65,6 +65,21 @@ public function get_user()
 
 public function login()
 {
+if ($this->username!='test' || $this->password!='test')
+	throw new Exception('Authentication error', 403);
+
+$u=array();
+
+$u['apitoken']='123123123123123';
+$u['username']=$this->username;
+$u['uid']=$this->source_id;
+
+return $u;
+}
+
+public function check_auth()
+{
+return true;
 }
 
 public function logout()
@@ -74,17 +89,29 @@ return true;
 
 public function auth_apikey($key)
 {
+return true;
 return $this->checkApiKey($key);
 }
 
 // Locations
 public function get_locations()
 {
+$loc=array();
+
+$def=new stdClass;
+$def->id=1;
+$def->name='Default';
+$def->zipcode='00000';
+
+$loc[]=$def;
+
+return $loc;
 }
 
 // Categories
 public function get_categories()
 {
+return array();
 }
 
 // Files (images)

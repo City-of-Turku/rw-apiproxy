@@ -2,7 +2,15 @@
 
 abstract class BackendActionsInterface
 {
+protected $token;
+
+public function set_auth_token($token)
+{
+$this->token=$token;
+}
+
 // Authentication
+abstract public function check_auth();
 abstract public function set_auth($username, $password);
 abstract public function get_user();
 abstract public function login();

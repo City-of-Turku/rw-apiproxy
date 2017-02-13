@@ -13,7 +13,7 @@ $this->be=$be;
 
 public function locations()
 {
-$tmp=$this->be->retrieve_view('locations');
+$tmp=$this->be->get_locations();
 if (!$tmp)
 	return Flight::json(Response::data(500, 'Failed to retrieve locations', 'locations'), 500);
 

@@ -137,9 +137,17 @@ $i->image_styles=$s;
 return $i;
 }
 
-public function add_product(array $data, array $files)
+public function add_product($data, array $files)
 {
+// print_r($data);die();
+// XXX
+$p=new Product();
+$p->sku=array($data['barcode']);
+$p->description=$data['description'];
+$p->name=$data['title'];
+$p->images=$files;
 
+return $this->addProduct($p);
 }
 
 // Products
@@ -1133,6 +1141,7 @@ for ($l=0;$l<$langs;$l++) {
 	$resources->description_short->language[$l] = $p->description!=='' ? $p->description : '';
 }
 
+//xxx
 $resources->condition = 'used';
 
 // Default category

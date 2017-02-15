@@ -131,7 +131,7 @@ public function view_file($fid, $data=false)
 $i=new stdClass;
 $s=new stdClass;
 $s->large_default=sprintf('%s/%d-%s/prestashop_image.jpg', $this->presta_base_url, $fid, $this->img_style);
-$i->styles=$s;
+$i->image_styles=$s;
 return $i;
 }
 

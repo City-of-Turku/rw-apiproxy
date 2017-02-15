@@ -387,21 +387,23 @@ return $f;
 /**
  * add()
  *
- * Add new product to Drupal Commerce.
+ * Add new product to Backend
  */
 public Function add()
 {
 if (!$this->l->isAuthenticated())
 	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
 
-$fre='';
+$fer='';
 
 try {
 	$rf=Flight::request()->files;
 	$r=$this->api->add_product(Flight::request()->data, $rf['images'], $fer);
 	return Flight::json(Response::data(201, 'Product add', 'product', array("response"=>$r, "file_errors"=>$fer)), 201);
 } catch (Exception $e) {
-	slog('Invalid product data', json_encode($er));
+	// XXX: Handle errors properly
+	$data=array('error'=>$e->getMessage());
+	slog('Invalid product data', json_encode($e));
 	return Flight::json(Response::data(400, 'Invalid product data', 'product', $data), 400);
 }
 

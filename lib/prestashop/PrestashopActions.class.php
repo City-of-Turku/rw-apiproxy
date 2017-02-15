@@ -137,6 +137,11 @@ $i->image_styles=$s;
 return $i;
 }
 
+public function add_product(array $data, array $files)
+{
+
+}
+
 // Products
 public function create_product($type, $sku, $title, $price)
 {
@@ -1062,7 +1067,7 @@ try {
 	$xml = $this->pws->get($opt);
 } catch (PrestaShopWebserviceException $ex) {
 	$this->err=$ex->getMessage();
-	slog("addProduct failed to get product synopsis", $ex->getMessage());
+	slog("getEmptyProduct failed to get product synopsis", $ex->getMessage());
 	return false;
 }
 return $xml;

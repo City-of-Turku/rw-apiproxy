@@ -13,14 +13,17 @@ private $session_token;
 private $hmac_key;
 private $decrypt_key;
 
+private $api_config;
+private $config;
+
 private $umap;
 
-public function __construct($url)
+public function __construct(array $api, $array $config)
 {
-$this->d=new DrupalServiceAPIClient($url);
+$this->d=new DrupalServiceAPIClient($config['url']);
 $this->d->set_auth_type(AUTH_SESSION);
-$this->hmac_key='xxx';
-$this->decrypt_key='yyy';
+$this->hmac_key=$config['hmac_key'];
+$this->decrypt_key=$config['key'];
 $this->umap=array();
 }
 

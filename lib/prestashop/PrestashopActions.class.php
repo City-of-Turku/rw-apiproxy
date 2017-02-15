@@ -11,6 +11,9 @@ protected $shop_id;
 protected $db;
 protected $salt='ns!%gsd&@+-tyaFD%SA!f5h@<gjh5%&>';
 
+protected $presta_base_url='';
+protected $api_base_url='';
+
 // XXX
 protected $default_cid=12;
 protected $default_tax=1;
@@ -36,13 +39,17 @@ protected $id_currency=1;
 
 protected $debug=false;
 
-public Function __construct(array $config, array $cmap)
+protected $img_style='large_default';
+
+public Function __construct(array $api_config, array $config, array $cmap)
 {
 $this->pws=new PrestaShopWebservice($config['url'], $config['key'], $this->debug);
 $this->products=array();
 $this->product_stock_map=array();
 $this->source=self::SRC_SUPPLIER;
 $this->cmap=$cmap;
+$this->api_base_url=$api_config['api_base_url'];
+$this->presta_base_url=$config['url'];
 
 $this->db=new mysqli($config['host'], $config['user'], $config['password'], $config['db']);
 if ($this->db->connect_error)
@@ -118,16 +125,76 @@ return array();
 public function upload_file($file, $filename=null)
 {
 }
+
 public function view_file($fid, $data=false)
 {
+$i=new stdClass;
+$s=new stdClass;
+$s->large_default=sprintf('%s/%d-%s/prestashop_image.jpg', $this->presta_base_url, $fid, $this->img_style);
+$i->styles=$s;
+return $i;
 }
 
 // Products
 public function create_product($type, $sku, $title, $price)
 {
 }
-public function index_products()
+
+protected function xmlToProduct()
 {
+}
+
+public function index_products($page=0, $pagesize=20, array $filter=null, array $sortby=null)
+{
+$ps=array();
+$xml=$this->getProducts($page, $pagesize, $filter, $sortby);
+if (!$xml)
+	return false;
+
+$xps=$xml->children()->children();
+
+foreach ($xps as $ptmp) {
+	$a=$ptmp->attributes();
+	$pxml=$this->getProduct($a->id);
+	if (!$pxml) {
+		slog("Failed to fetch product data");
+		continue;
+	}
+	$p=$pxml->children()->children();
+	$po=new stdClass;
+
+	$po->id=$a->id;
+	$po->barcode=(string)$p->reference;
+	$po->ean=(string)$p->ean13;
+	$po->title=(string)$p->name[0];
+	$po->stock=(int)$p->quantity;
+	$po->price=(float)$p->price;
+	$po->purpose=0;
+	$po->location=0;
+	$po->category='';
+	$po->subcategory='';
+	$po->description=(string)$p->description[0];
+	$img=array();
+	foreach ($p->associations->images[0] as $il) {
+		// Ok, we cheat here a bit and hope it works. Prestashop API gives images in a stupid way
+		// instead of direct urls, it gives url that go trough the api, needing auth and product id and all we need is image identifier
+		// we cheat by taking the last part of the url (the actual image id) and use that as the image id
+		// xlink:href api/images/products/14/27 <- that
+		//
+		$iurl=(string)$il->attributes('xlink', true)->href;
+		$img[]=sprintf('%s/product/image/%s/%d', $this->api_base_url, $this->img_style, (int)basename($iurl));
+	}
+	$po->images=$img;
+	//$po->thumbnail=(string)$p->id_default_image[0]->attributes('xlink', true)->href;
+	if (count($img)>0)
+		$po->thumbnail=$img[0];
+	
+	// print_r($po);die();
+
+	$ps[$po->barcode]=$po;
+}
+//die();
+return $ps;
 }
 
 public function get_product($id)
@@ -136,6 +203,7 @@ public function get_product($id)
 
 public function get_product_by_sku($sku)
 {
+$p=$this->getProductIdByRef($sku);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -321,6 +389,22 @@ protected Function cacheProductData($xml)
 {
 }
 
+protected function getProducts($page=0, $pagesize=20, array $filter=null, array $sortby=null)
+{
+try {
+	$opt=array('resource' => 'products');
+	if (is_numeric($this->shop_id))
+		$opt['id_shop']=$this->shop_id;
+	$opt['limit']=sprintf('%d,%d', ($page-1)*$pagesize, $pagesize);
+	// XXX: Handle filter, sortby
+	return $this->pws->get($opt);
+} catch (PrestaShopWebserviceException $ex) {
+	$this->err=$ex->getMessage();
+	slog("getProducts", $this->err);
+}
+return false;
+}
+
 public Function getProductByRef($reference)
 {
 try {
@@ -350,7 +434,7 @@ $id=(int)$c->id[0];
 return $id;
 }
 
-public Function getProductIdByRef($reference)
+private Function getProductIdByRef($reference)
 {
 $xml=$this->getProductByRef($reference);
 if ($xml===false)

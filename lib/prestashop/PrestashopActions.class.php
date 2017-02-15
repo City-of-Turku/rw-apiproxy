@@ -107,10 +107,12 @@ $loc=array();
 
 $def=new stdClass;
 $def->id=1;
-$def->name='Default';
+$def->location='Default';
 $def->zipcode='00000';
+$def->street='';
+$def->city='';
 
-$loc[]=$def;
+$loc[$def->id]=$def;
 
 return $loc;
 }

@@ -14,7 +14,7 @@ private $umapr;
 private $catmap;
 private $validSort=array('title','sku','date');
 
-public function __construct(LoginHandler $l, &$be)
+public function __construct(LoginHandler $l, BackendActionsInterface &$be)
 {
 $this->l=$l;
 $this->api=$be;
@@ -233,6 +233,8 @@ if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
 header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24)));
 header("Content-type: ".$mime);
 
+slog($url);
+
 $data=@file_get_contents($url);
 header("Content-Length: ".strlen($data));
 die($data);
@@ -242,6 +244,8 @@ public Function getProductImage($style, $fid)
 {
 $style=filter_var($style, FILTER_SANITIZE_STRING);
 $fid=filter_var($fid, FILTER_VALIDATE_INT);
+
+slog($style.$fid);
 
 // We allow anonymous retrieval of product images, client must still be authenticated with client key
 if (!$this->l->isClientAuthenticated())
@@ -267,24 +271,6 @@ if (!property_exists($styles, "$style"))
 return $this->dumpImageUrl('image/jpeg', $styles->$style);
 }
 
-protected Function setProductImages(array $images, $style)
-{
-global $api;
-
-$p=array();
-foreach ($images as $img) {
-	// Check that response is valid
-	if (!is_object($img))
-		continue;
-	// Check that it is indeed an image
-	if ($img->type!='image')
-		continue;
-
-	$p[]=sprintf('%s/product/image/%s/%d', $api['api_base_url'], $style, $img->fid);
-}
-return $p;
-}
-
 protected Function dataToProduct(array $d)
 {
 $p=new Product();
@@ -293,73 +279,6 @@ $p->sku=$d['barcode'];
 $p->title=$d['title'];
 $p->category=$d['category'];
 $p->stock=1;
-
-return $p;
-}
-
-/**
- * drupalJSONtoProduct()
- *
- * Convert the JSON object returned by Drupal to a simpler
- * and easier to use format without all the Drupal specific details.
- *
- */
-protected Function drupalJSONtoProduct(stdClass $po)
-{
-//echo json_encode($po); die();
-$p=array();
-$p['id']=$po->product_id;
-$p['uid']=$po->uid;
-$p['barcode']=$po->sku;
-$p['title']=$po->title;
-$p['status']=$po->status;
-$p['stock']=$po->commerce_stock;
-$p['created']=$po->created;
-$p['category']=$this->categoryMap($po->type);
-$p['subcategory']=$this->categorySubMap($po->type);
-// Check for a body field!
-$p['description']=$po->title; // XXX
-$p['images']=array();
-if (property_exists($po, "field_location")) {
-	$p['location']=$po->field_location;
-}
-if (property_exists($po, "field_image")  && !is_null($po->field_image)) {
-	$i=$this->setProductImages($po->field_image, 'normal');
-	$p['images']=$i;
-	if (count($i)>0) {
-		$t=$this->setProductImages($po->field_image, 'thumbnail');
-		$p['thumbnail']=$t[0];
-	}
-}
-if (property_exists($po, "field_paino")) {
-	// Always in Kg!
-	$p['size']['weight']=$po->field_paino;
-}
-if (property_exists($po, "field_color")) {
-	$p['color']=$po->field_color;
-}
-if (property_exists($po, "field_material")) {
-	$p['material']=$po->field_material;
-}
-if (property_exists($po, "field_koko") && is_object($po->field_koko)) {
-	// Always in cm!
-	$a=$po->field_koko;
-	$p['size']['depth']=$po->field_koko->length; // Make more sense
-	$p['size']['width']=$po->field_koko->width;
-	$p['size']['height']=$po->field_koko->height;
-}
-if (property_exists($po, "field_ean")) {
-	$p['ean']=$po->field_ean;
-}
-if (property_exists($po, "field_isbn")) {
-	$p['isbn']=$po->field_isbn;
-}
-if (property_exists($po, "field_purpose")) {
-	// XXX: Values need to be mapped!!!
-	$p['purpose']=$this->purposeMapReverse($po->field_purpose);
-} else {
-	$p['purpose']=0;
-}
 
 return $p;
 }
@@ -438,10 +357,7 @@ if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
 
 $ps=array();
 try {
-	$data=$this->api->index_products($ip, $a, null, $filter, $sortby);
-	foreach ($data as $po) {
-		$ps[$po->sku]=$this->drupalJSONtoProduct($po);
-	}
+	$ps=$this->api->index_products($ip, $a, null, $filter, $sortby);
 } catch (Exception $e) {
 	Flight::json(Response::data(500, 'Data load failed', 'product', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 	return false;

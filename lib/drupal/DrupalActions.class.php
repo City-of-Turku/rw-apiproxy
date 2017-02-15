@@ -18,7 +18,7 @@ private $config;
 
 private $umap;
 
-public function __construct(array $api, $array $config)
+public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
 $this->d->set_auth_type(AUTH_SESSION);

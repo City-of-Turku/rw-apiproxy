@@ -24,125 +24,6 @@ $this->cmap=json_decode(file_get_contents('colormap.json'), true);
 $this->umap=json_decode(file_get_contents('usagemap.json'), true);
 $this->umapr=array_flip($this->umap);
 $this->catmap=json_decode(file_get_contents('categorymap.json'), true);
-
-// Product field mapping
-$this->map=array(
- 'sku'=>array(
-	'id'=>'barcode',
-	'required'=>true,
-	'type'=>'string',
-	'cb_validate'=>'validateBarcode'
-	),
- 'title'=>array(
-	'id'=>'title',
-	'required'=>true,
-	'type'=>'string'
-	),
- 'type'=>array(
-	'id'=>'category',
-	'required'=>true,
-	'type'=>'string',
-	'cb_map'=>'categoryMap'
-	),
- 'commerce_stock'=>array(
-	'id'=>'stock',
-	'required'=>false,
-	'default'=>1,
-	'type'=>'int',
-	'min_value'=>0,
-	'max_value'=>99999
-	),
- 'field_varasto'=>array(
-	'id'=>'location',
-	'required'=>true,
-	'type'=>'nodeid',
-	),
- 'field_location_detail'=>array(
-	'id'=>'locationdetail',
-	'ignore'=>true,
-	'field_id'=>'value',
-	'required'=>false,
-	'type'=>'string',
-	'cb_validate'=>'validateDescription'
-	),
- 'field_body'=>array(
-	'id'=>'description',
-	'field_id'=>'value',
-	'required'=>false,
-	'type'=>'string',
-	'cb_validate'=>'validateDescription'
-	),
- 'field_purpose'=>array(
-	'id'=>'purpose',
-	'required'=>true,
-	'type'=>'int',
-	'cb_map'=>'purposeMap',
-	'cb_map_r'=>'purposeMapReverse'
-	),
- 'field_paino'=>array(
-	'id'=>array('weight'=>null, 'unit'=>'kg'), // Request variables that get analyzed (if value NULL, if not, then the value is used as is)
-	'vid'=>array('weight', 'unit'),            // and translated to drupal field variables.
-	'required'=>false,
-	'type'=>'int',
-	'min_val'=>1,
-	'max_val'=>1000
-	),
- 'field_koko'=>array(
-	'id'=>array('width'=>null, 'height'=>null, 'depth'=>null, 'unit'=>'cm'),
-	'vid'=>array('width', 'height', 'length', 'unit'),
-	'required'=>false,
-	'type'=>'int',
-	'min_val'=>1,
-	'max_val'=>1000
-	),
- 'field_vari'=>array(
-	'id'=>'color',
-	'required'=>false,
-	'type'=>'string',
-	'cb_map'=>'colorMap'
-	),
- 'field_isbn'=>array(
-	'id'=>'isbn',
-	'required'=>false,
-	'ignore_empty'=>true,
-	'type'=>'string',
-	'cb_validate'=>'validateEAN'
-	),
- 'field_ean'=>array(
-	'id'=>'ean',
-	'required'=>false,
-	'ignore_empty'=>true,
-	'type'=>'string',
-	'cb_validate'=>'validateEAN'
-	)
-);
-
-}
-
-private Function validateDescription($desc)
-{
-return strip_tags($desc);
-}
-
-/**
- * Validate EAN/ISBN
- *
- * Checks if given code is 13 numbers
- * XXX: Does not *really* validate it properly yet
- *
- */
-private Function validateEAN($bc)
-{
-return preg_match('/^[0-9]{13}$/', $bc)===1 ? $bc : false;
-}
-
-/**
- * Validate our barcode format.
- * We accept both (old) AAA123456 and (new) AAA123456789
- */
-private Function validateBarcode($bc)
-{
-return preg_match('/^[A-Z]{3}[0-9]{6,9}$/', $bc)===1 ? $bc : false;
 }
 
 /**
@@ -513,53 +394,23 @@ public Function add()
 if (!$this->l->isAuthenticated())
 	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
 
-$p=array();
-$er=array();
+$fre='';
 
-$f=$this->mapRequest($er);
-
-if (count($er)>0) {
-	$data=array('errors'=>$er);
-	$data['f']=$f;
+try {
+	$rf=Flight::request()->files;
+	$r=$this->api->add_product(Flight::request()->data, $rf['images'], $fer);
+	return Flight::json(Response::data(201, 'Product add', 'product', array("response"=>$r, "file_errors"=>$fer)), 201);
+} catch (Exception $e) {
 	slog('Invalid product data', json_encode($er));
 	return Flight::json(Response::data(400, 'Invalid product data', 'product', $data), 400);
 }
 
-//return Flight::json(Response::data(400, 'Product add', 'product', $f), 400);
-
-$rf=Flight::request()->files;
-$files=$rf['images'];
-
-$fer=array();
-$images=array();
-if (count($files)>0) {
-	$fids=$this->addImagesFromUpload($files, $fer);
-	foreach ($fids as $fid) {
-		$images[]=array('fid'=>$fid);
-	}
-	$f['field_image']=$images;
-}
-
-//return Flight::json(Response::data(400, 'Product add', 'product', array('images'=>$images)), 400);
-
-$price=0;
-
-$r=$this->api->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
-
-slog('Product added', $f['sku']);
-
-Flight::json(Response::data(201, 'Product add', 'product', array("response"=>$r, "file_errors"=>$fer)), 201);
 }
 
 public Function update()
 {
 if (!$this->l->isAuthenticated())
 	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
-
-$p=array();
-$er=array();
-
-$f=$this->mapRequest($er);
 
 Flight::json(Response::data(500, 'Update not implemented', 'product'), 500);
 }

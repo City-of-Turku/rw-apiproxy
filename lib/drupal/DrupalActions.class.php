@@ -17,6 +17,7 @@ private $api_config;
 private $config;
 
 private $umap;
+private $map;
 
 public function __construct(array $api, array $config)
 {
@@ -25,6 +26,98 @@ $this->d->set_auth_type(AUTH_SESSION);
 $this->hmac_key=$config['hmac_key'];
 $this->decrypt_key=$config['key'];
 $this->umap=array();
+// Client API to Drupal Product field mapping
+$this->map=array(
+ 'sku'=>array(
+	'id'=>'barcode',
+	'required'=>true,
+	'type'=>'string',
+	'cb_validate'=>'validateBarcode'
+	),
+ 'title'=>array(
+	'id'=>'title',
+	'required'=>true,
+	'type'=>'string'
+	),
+ 'type'=>array(
+	'id'=>'category',
+	'required'=>true,
+	'type'=>'string',
+	'cb_map'=>'categoryMap'
+	),
+ 'commerce_stock'=>array(
+	'id'=>'stock',
+	'required'=>false,
+	'default'=>1,
+	'type'=>'int',
+	'min_value'=>0,
+	'max_value'=>99999
+	),
+ 'field_varasto'=>array(
+	'id'=>'location',
+	'required'=>true,
+	'type'=>'nodeid',
+	),
+ 'field_location_detail'=>array(
+	'id'=>'locationdetail',
+	'ignore'=>true,
+	'field_id'=>'value',
+	'required'=>false,
+	'type'=>'string',
+	'cb_validate'=>'validateDescription'
+	),
+ 'field_body'=>array(
+	'id'=>'description',
+	'field_id'=>'value',
+	'required'=>false,
+	'type'=>'string',
+	'cb_validate'=>'validateDescription'
+	),
+ 'field_purpose'=>array(
+	'id'=>'purpose',
+	'required'=>true,
+	'type'=>'int',
+	'cb_map'=>'purposeMap',
+	'cb_map_r'=>'purposeMapReverse'
+	),
+ 'field_paino'=>array(
+	'id'=>array('weight'=>null, 'unit'=>'kg'), // Request variables that get analyzed (if value NULL, if not, then the value is used as is)
+	'vid'=>array('weight', 'unit'),            // and translated to drupal field variables.
+	'required'=>false,
+	'type'=>'int',
+	'min_val'=>1,
+	'max_val'=>1000
+	),
+ 'field_koko'=>array(
+	'id'=>array('width'=>null, 'height'=>null, 'depth'=>null, 'unit'=>'cm'),
+	'vid'=>array('width', 'height', 'length', 'unit'),
+	'required'=>false,
+	'type'=>'int',
+	'min_val'=>1,
+	'max_val'=>1000
+	),
+ 'field_vari'=>array(
+	'id'=>'color',
+	'required'=>false,
+	'type'=>'string',
+	'cb_map'=>'colorMap'
+	),
+ 'field_isbn'=>array(
+	'id'=>'isbn',
+	'required'=>false,
+	'ignore_empty'=>true,
+	'type'=>'string',
+	'cb_validate'=>'validateEAN'
+	),
+ 'field_ean'=>array(
+	'id'=>'ean',
+	'required'=>false,
+	'ignore_empty'=>true,
+	'type'=>'string',
+	'cb_validate'=>'validateEAN'
+	)
+);
+
 }
 
 /**
@@ -155,6 +248,50 @@ public function view_file($fid, $data=false)
 return $this->d->view_file($fid, $data, false);
 }
 
+protected Function addImagesFromUpload(array $images, array &$errors)
+{
+$fids=array();
+$c=count($images['name']);
+for ($i=0;$i<$c;$i++) {
+        if ($images['error'][$i]!=0) {
+                $errors[]=$images['name'][$i];
+                continue;
+        }
+        $fids[]=$this->upload_file($images['tmp_name'][$i], $images['name'][$i]);
+}
+return $fids;
+}
+
+public function add_product(array $data, array $files)
+{
+$p=array();
+$er=array();
+
+$f=$this->mapRequest($data, $er);
+
+if (count($er)>0) {
+        $data=array('errors'=>$er);
+        $data['f']=$f;
+        slog('Invalid product data', json_encode($er));
+	throw new Exception('Invalid product data', 400);
+}
+
+$fer=array();
+$images=array();
+if (count($files)>0) {
+        $fids=$this->addImagesFromUpload($files, $fer);
+        foreach ($fids as $fid) {
+                $images[]=array('fid'=>$fid);
+        }
+        $f['field_image']=$images;
+}
+
+$price=0;
+$r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
+slog('Product added', $f['sku']);
+return true;
+}
+
 // Products
 public function create_product($type, $sku, $title, $price)
 {
@@ -259,5 +396,127 @@ public function get_product_by_sku($sku)
 return $this->d->get_product_by_sku($sku);
 }
 
+/**
+ * mapVariable
+ */
+protected Function mapVariable(array &$r, $id, $df, array &$o, array &$er)
+{
+// Should we just ignore it
+if (isset($o['ignore']) && $o['ignore']===true)
+	return true;
+
+// First check if it exist or not and if required
+if ($o['required']===true && !isset($r[$id])) {
+	$er[$id]='Required parameter is missing';
+	return false;
+} else if ($o['required']===false && !isset($r[$id]) && !isset($o['default'])) {
+	return true;
+}
+
+// Set default value in case not set
+if ($o['required']===false && !isset($r[$id]) && isset($o['default'])) {
+	$v=$o['default'];
+} else {
+	$v=$r[$id];
+}
+
+// Check if empty value can be just ignored, or do we need this ?
+//if ($o['required']===false &&
+
+$type=$o['type'];
+switch ($type) {
+	case 'string':
+		$v=trim($v);
+		if (!is_string($v))
+			$er[$id]='Invalid contents, not a string: '.$v;
+		if (isset($o['cb_map'])) {
+			$v=call_user_func(array($this, $o['cb_map']), $v);
+			if ($v===false) {
+				$er[$id]='Invalid value given, not found in map';
+				return false;
+			}
+		}
+		if (isset($o['cb_validate'])) {
+			$v=call_user_func(array($this, $o['cb_validate']), $v);
+			if ($v===false) {
+				$er[$id]='Invalid value given, did not validate';
+				return false;
+			}
+		}
+	break;
+	case 'int':
+		if (!is_numeric($v))
+			$er[$id]='Invalid contents, not a number '.$v;
+		$v=(int)$v;
+		if (isset($o['max_value']) && $v>$o['max_value'])
+			$er[$id]='Value too large: '.$v;
+		else if (isset($o['min_value']) && $v<$o['min_value'])
+			$er[$id]='Value too small: '.$v;
+		if (isset($o['cb_map'])) {
+			$v=call_user_func(array($this, $o['cb_map']), $v);
+			if ($v===false) {
+				$er[$id]='Invalid value given, not found in map';
+				return false;
+			}
+		}
+		if (isset($o['cb_validate'])) {
+			$v=call_user_func(array($this, $o['cb_validate']), $v);
+			if ($v===false) {
+				$er[$id]='Invalid value given, did not validate';
+				return false;
+			}
+		}
+	break;
+	case 'nodeid':
+		if (!is_numeric($v) || $v<1)
+			$er[$id]='Invalid node reference ID';
+		$v=(int)$v;
+	break;
+	default:
+		$er[$id]='Unknown type. Invalid contents';
+		return false;
+}
+
+return $v;
+}
+
+protected Function mapRequest(array $r, array &$er)
+{
+foreach ($this->map as $df => $o) {
+	$id=$o['id'];
+
+	if (is_array($id)) {
+		// Map multiple request variables into one drupal field
+		$vididx=0;
+		$v=array();
+		foreach ($id as $tid => $dv) {
+			$fid=$o['vid'][$vididx];
+			if (is_null($dv)) {
+				$tmp=$this->mapVariable($r, $tid, $df, $o, $er);
+				if ($tmp===false || $tmp===true)
+					continue;
+				$v[$fid]=$tmp;
+			} else {
+				$v[$fid]=$dv;
+			}
+			$vididx++;
+		}
+		if (count($v)==count($id))
+			$f[$df]=$v;
+	} else {
+		// 1:1
+		$v=$this->mapVariable($id, $df, $o, $er);
+		if ($v===false || $v===true) // Skip or Error case, lets just collection any more errors
+			continue;
+		if (isset($o['field_id'])) {
+			$f[$df][$o['field_id']]=$v;
+		} else {
+			$f[$df]=$v;
+		}
+	}
+}
+
+return $f;
+}
 
 }

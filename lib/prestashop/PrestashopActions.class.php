@@ -1233,28 +1233,31 @@ return true;
 protected Function addProductImagesFromUpload($id, array $images)
 {
 $c=count($images['name']);
+slog("Images for $id ".$c);
 for ($i=0;$i<$c;$i++) {
-	if ($images['error'][$i]!=0)
+	if ($images['error'][$i]!=0) {
+		$errors[]=$images['name'][$i];
+		slog("Image upload error ".$images['error'][$i]);
 		continue;
+	}
 
 	$ires=$this->addProductImage($id, $images['tmp_name'][$i]);
 	slog("Image add for $id ", $ires ? "OK": "Failed ".$images['tmp_name'][$i]." - ".$images['name'][$i]);
 }
 }
 
-public Function addProductImage($id, $image)
+protected Function addProductImage($id, $image)
 {
 try {
 	$opt = array('resource' => 'images', 'type'=> 'products', 'id'=>$id, 'image'=>$image);
-	// Set shop if requested
 	if (is_numeric($this->shop_id) || $this->shop_id=='all')
 		$opt['id_shop']=$this->shop_id;
 	return $this->pws->add($opt);
 } catch (PrestaShopWebserviceException $ex) {
 	$this->err=$ex->getMessage();
-	slog("addProductImage", $ex->getMessage());
-	return false;
+	slog("addProductImage for $id failed ".$ex->getMessage());
 }
+return false;
 }
 
 }

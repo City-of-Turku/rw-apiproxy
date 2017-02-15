@@ -34,6 +34,7 @@ if(!function_exists('hash_equals')) {
 
 require('vendor/autoload.php');
 require('lib/Syslog.php');
+require('lib/Product.class.php');
 require('lib/BackendActionsInterface.class.php');
 
 // Drupal backend API
@@ -65,11 +66,11 @@ $appdata=$config['MobileApp'];
 switch ($api['backend']) {
 	case 'drupal':
 		$bc=$config['Drupal'];
-		$be=new DrupalActions($bc['url']);
+		$be=new DrupalActions($api, $bc);
 	break;
 	case 'prestashop':
 		$bc=$config['Prestashop'];
-		$be=new PrestashopActions($bc, array());
+		$be=new PrestashopActions($api, $bc, array());
 	break;
 	default:
 		die('Backend not set or invalid');

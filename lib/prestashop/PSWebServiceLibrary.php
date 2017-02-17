@@ -83,10 +83,14 @@ class PrestaShopWebservice
 	 */
 	protected function checkStatusCode($status_code, $body='')
 	{
+		// All OK, just return
+		if ($status_code==200 || $status_code==201)
+			return;
 		$error_label = 'This call to PrestaShop Web Services failed and returned an HTTP status of %d. That means: %s.';
+		if ($this->debug)
+			slog($status_code, $body);
 		switch($status_code)
 		{
-			case 200:	case 201:	break;
 			case 204: throw new PrestaShopWebserviceException(sprintf($error_label, $status_code, 'No content'), $status_code);break;
 			case 400: throw new PrestaShopWebserviceException(sprintf($error_label, $status_code, 'Bad Request'), $status_code, $body);break;
 			case 401: throw new PrestaShopWebserviceException(sprintf($error_label, $status_code, 'Unauthorized'), $status_code);break;
@@ -249,7 +253,7 @@ class PrestaShopWebservice
 
 		$request = self::executeRequest($url, array(CURLOPT_CUSTOMREQUEST => 'POST', CURLOPT_POSTFIELDS => $post_data));
 
-		self::checkStatusCode($request['status_code']);
+		self::checkStatusCode($request['status_code'], $request['response']);
 		return self::parseXML($request['response']);
 	}
 

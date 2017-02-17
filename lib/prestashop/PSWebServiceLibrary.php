@@ -87,8 +87,7 @@ class PrestaShopWebservice
 		if ($status_code==200 || $status_code==201)
 			return;
 		$error_label = 'This call to PrestaShop Web Services failed and returned an HTTP status of %d. That means: %s.';
-		if ($this->debug)
-			slog($status_code, $body);
+		slog($status_code, $body);
 		switch($status_code)
 		{
 			case 204: throw new PrestaShopWebserviceException(sprintf($error_label, $status_code, 'No content'), $status_code);break;
@@ -238,8 +237,9 @@ class PrestaShopWebservice
 			if (!is_numeric($options['id']) && !($options['id']>0))
 				throw new PrestaShopWebserviceException('Invalid ID');
 
-			// XXX: php 5.5.x could use $post_data = array('image' => new CurlFile($options['image'], 'image/jpeg', 'image.jpg');
-			$post_data=array('image'=>'@'.$options['image'].';type=image/jpeg;filename=product_'.$options['id'].'_image.jpeg');
+			$post_data = array('image' => new CurlFile($options['image'], 'image/jpeg', 'product_'.$options['id'].'_image.jpeg'));
+			// XXX: php 5.4 and older
+			// $post_data=array('image'=>'@'.$options['image'].';type=image/jpeg;filename=product_'.$options['id'].'_image.jpeg');
 
 			$url = $this->url.'/api/'.$options['resource'].'/'.$options['type'].'/'.$options['id'];
 		} else
@@ -370,8 +370,6 @@ class PrestaShopWebservice
 		else
 			throw new PrestaShopWebserviceException('Bad parameters given');
 		
-		slog($url);
-
 		$request = self::executeRequest($url,  array(CURLOPT_CUSTOMREQUEST => 'PUT', CURLOPT_POSTFIELDS => $xml));
 		self::checkStatusCode($request['status_code'], $request['response']);// check the response validity
 		return self::parseXML($request['response']);

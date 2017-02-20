@@ -403,7 +403,7 @@ try {
 } catch (Exception $e) {
 	// XXX: Handle errors properly
 	$data=array('error'=>$e->getMessage());
-	slog('Invalid product data', json_encode($e));
+	slog('Invalid product data', false, $e);
 	return Flight::json(Response::data(400, 'Invalid product data', 'product', $data), 400);
 }
 

@@ -1,5 +1,7 @@
 <?php
 
+require_once('AES.class.php');
+
 /**
  * Handle user authentication to services
  *
@@ -9,7 +11,7 @@ class LoginHandler
 private $isClientAuth=false;
 private $isAuth=false;
 private $token;
-private $decrypt_key='7e2bd40c210d25c738318f706';
+private $key='7e2bd40c210d25c738318f706';
 private $hmac_key='';
 //
 private $uid;
@@ -20,12 +22,16 @@ private $session_token;
 private $config;
 private $appdata;
 private $drupal;
+//
+private $aes;
 
 public function __construct(array $config, array $app, &$drupal)
 {
 $this->drupal=$drupal;
 $this->appdata=$app;
 $h=getallheaders();
+
+$this->aes=new AES($this->key, $this->hmac_key);
 
 if (!empty($h['X-AuthenticationKey'])) {
 	// XXX: Check against authorized client keys
@@ -93,35 +99,12 @@ return true;
  */
 protected function checkAuthToken()
 {
-$tmp=$this->decrypt_token($this->token);
+$tmp=$this->aes->decrypt($this->token);
 
 if ($tmp===false)
 	return false;
 
 return $this->setAuthdata($tmp);
-}
-
-private function decrypt_token($token)
-{
-$tmp=base64_decode($token);
-$hash=substr($tmp, 0, 32);
-$iv=substr($tmp, 32, 16);
-$text=substr($tmp, 48);
-$chash=hash_hmac('sha256', $iv.$text, $this->hmac_key, true);
-if (!hash_equals($hash, $chash)) // XXX PHP 5.6->
-	return false;
-$tmp=mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $this->decrypt_key, $text, MCRYPT_MODE_CBC, $iv);
-return trim($tmp);
-return substr($tmp, 0, -ord($tmp[strlen($tmp)-1]));
-}
-
-private function encrypt_token($token)
-{
-$iv_size=mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-$iv=mcrypt_create_iv($iv_size, MCRYPT_RAND);
-$tmp=mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $this->decrypt_key, $token, MCRYPT_MODE_CBC, $iv);
-$hash=hash_hmac('sha256', $iv.$tmp, $this->hmac_key, true);
-return base64_encode($hash.$iv.$tmp);
 }
 
 /**
@@ -148,7 +131,7 @@ try {
 	// Construct a login key from session data
 	$t=sprintf('%s:%s:%s:%d', $ur->sessid, $ur->session_name, $ur->token, $ur->user->uid);
 
-	$u['apitoken']=$this->encrypt_token($t);
+	$u['apitoken']=$this->aes->encrypt($t);
 	$u['username']=$ur->user->name;
 	$u['uid']=$ur->user->uid;
 	$u['created']=$ur->user->created;

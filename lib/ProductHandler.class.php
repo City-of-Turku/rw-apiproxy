@@ -381,7 +381,7 @@ $this->browse();
 public Function browse($page=1)
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
 
 $r=Flight::request()->query;
 $filter=array(
@@ -599,7 +599,7 @@ return $f;
 public Function add()
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
 
 $p=array();
 $er=array();
@@ -642,7 +642,7 @@ Flight::json(Response::data(201, 'Product add', 'product', array("response"=>$r,
 public Function update()
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
 
 $p=array();
 $er=array();
@@ -678,7 +678,7 @@ return $this->get_product_from_response($data);
 public Function stockUpdate()
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'stock'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'stock'), 401);
 
 Flight::json(Response::data(500, 'Stock handling not implemented', 'product'), 500);
 }
@@ -686,7 +686,7 @@ Flight::json(Response::data(500, 'Stock handling not implemented', 'product'), 5
 public Function delete()
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
 Flight::json(Response::data(500, 'Delete not implemented', 'product'), 500);
 }
 

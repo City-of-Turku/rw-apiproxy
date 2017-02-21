@@ -22,7 +22,7 @@ $this->appdata=$app;
 $h=getallheaders();
 
 if (!$this->checkAuthenticationKey($h)) {
-	slog('Invalid client AuthenticationKey');
+	Flight::json(Response::data(403, 'Client not accepted', 'login'), 403);
 	return;
 }
 
@@ -42,6 +42,9 @@ if (!empty($h['X-AuthenticationKey'])) {
 		$this->isClientAuth=true;
 		return true;
 	}
+	slog("Client with invalid application key");
+} else {
+	slog("Client with empty application key");
 }
 $this->isClientAuth=false;
 $this->isAuth=false;

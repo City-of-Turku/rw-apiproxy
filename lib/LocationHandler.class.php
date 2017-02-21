@@ -5,7 +5,7 @@ class LocationHandler
 private $l;
 private $be;
 
-public function __construct(LoginHandler &$l, &$be)
+public function __construct(LoginHandler &$l, BackendActionsInterface &$be)
 {
 $this->l=$l;
 $this->be=$be;
@@ -13,6 +13,9 @@ $this->be=$be;
 
 public function locations()
 {
+if (!$this->l->isAuthenticated())
+        return Flight::json(Response::data(401, 'Client is not authenticated', 'locations'), 401);
+
 $tmp=$this->be->get_locations();
 if (!$tmp)
 	return Flight::json(Response::data(500, 'Failed to retrieve locations', 'locations'), 500);

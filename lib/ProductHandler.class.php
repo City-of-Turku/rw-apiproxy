@@ -14,7 +14,7 @@ private $umapr;
 private $catmap;
 private $validSort=array('title','sku','date');
 
-public function __construct(LoginHandler $l, BackendActionsInterface &$be)
+public function __construct(LoginHandler &$l, BackendActionsInterface &$be)
 {
 $this->l=$l;
 $this->api=$be;
@@ -457,7 +457,8 @@ Flight::json(Response::data(500, 'Delete not implemented', 'product'), 500);
 
 public Function categories()
 {
-// Flight::lastModified(1234567890);
+if (!$this->l->isAuthenticated())
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'categories'), 401);
 Flight::json(Response::data(200, 'Categories', 'categories', $this->catmap));
 }
 

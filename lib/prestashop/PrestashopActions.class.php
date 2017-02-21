@@ -9,7 +9,8 @@ protected $products;
 protected $product_stock_map;
 protected $shop_id;
 protected $db;
-protected $salt='ns!%gsd&@+-tyaFD%SA!f5h@<gjh5%&>';
+protected $salt;
+protected $pwdsalt;
 
 protected $presta_base_url='';
 protected $api_base_url='';
@@ -49,6 +50,7 @@ $this->product_stock_map=array();
 $this->source=self::SRC_SUPPLIER;
 $this->api_base_url=$api_config['api_base_url'];
 $this->presta_base_url=$config['url'];
+$this->pwdsalt=$config['presta_salt'];
 
 // Load client categorykey => (presta,id,map)
 $this->cmap=json_decode(file_get_contents($config['categorymap']), true);;
@@ -74,14 +76,42 @@ public function get_user()
 
 public function login()
 {
-if ($this->username!='test' || $this->password!='test')
-	throw new Exception('Authentication error', 403);
+//if ($this->username!='test' || $this->password!='test')
+//	throw new Exception('Authentication error', 403);
+
+if (!filter_var($this->username, FILTER_VALIDATE_EMAIL))
+	throw new Exception('Authentication error (0)', 403);
+
+$cpwd=md5($this->pwdsalt.$this->password);
+$s=$mysqli->prepare("select id_employee,lastname,firstname,email,password FROM ps_employee WHERE active=1 AND email=? AND passwd=?");
+if (!$s)
+	throw new Exception('Authentication error (1)', 403);
+
+$s->bind_param("ss", $this->username, $cpwd);
+
+if (!$s->execute())
+	throw new Exception('Authentication error (2)', 403);
+
+$r=$s->get_result();
+if (!$r)
+	throw new Exception('Authentication error (3)', 403);
+
+$o=$res->fetch_object();
+if (!$o)
+	throw new Exception('Authentication error (4)', 403);
+
+$r->close();
 
 $u=array();
-
-$u['apitoken']='123123123123123';
 $u['username']=$this->username;
-$u['uid']=$this->source_id;
+$u['uid']=$o->id_employee;
+$u['email']=$this->username;
+
+$tmp=array(
+ 'u'=>$u['uid'],
+ 'e'=>$this->username
+);
+$u['apitoken']=json_encode($tmp);
 
 return $u;
 }
@@ -98,7 +128,7 @@ return true;
 
 public function auth_apikey($key)
 {
-return true;
+// return true;
 return $this->checkApiKey($key);
 }
 
@@ -147,7 +177,7 @@ $p->description=$data['description'];
 $p->name=$data['title'];
 $p->images=$files;
 // Subcategory is more specific so use it if set
-$p->category=empty($data['subcategory'] ? $data['category'] : $data['subcategory']);
+$p->category=empty($data['subcategory']) ? $data['category'] : $data['subcategory'];
 if (isset($data['stock']) && is_numeric($data['stock']) && (int)$data['stock']>0)
 	$p->quantity=(int)$data['stock'];
 
@@ -1172,9 +1202,13 @@ $resources->id_category_default=$this->default_cid;
 $c=$p->category;
 if (isset($this->cmap[$c])) {
 	slog("Assigning category key", $c);
-	$cid=explode(',', $this->cmap[$c]);
-	foreach ($cid as $ccid)
+	// $cid=explode(',', $this->cmap[$c]);
+	foreach ($this->cmap[$c] as $ccid) {
+		slog("Category ID", $ccid);
 		$resources->associations->categories->addChild('category')->addChild('id', $ccid);
+	}
+} else {
+	slog("Category mapping not found for key", $c);
 }
 
 switch ($this->source) {
@@ -1214,6 +1248,7 @@ foreach ($p->sku as $sku) {
 
 	try {
 		$xml=$this->pws->add($opt);
+		slog("addProduct", $xml);
 	} catch (PrestaShopWebserviceException $ex) {
 		$this->err=$ex->getMessage();
 		slog("addProduct add failed", $this->err);

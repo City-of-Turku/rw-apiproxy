@@ -212,7 +212,7 @@ return $fids;
 public Function searchBarcode($barcode)
 {
 if (!$this->validateBarcode($barcode))
-	return Flight::json(Response::data(500, 'Invalid barcode', 'search'));
+	return Flight::json(Response::data(500, 'Invalid barcode', 'search'), 500);
 
 $filter=array(
 	'sku'=>$barcode
@@ -247,10 +247,10 @@ $fid=filter_var($fid, FILTER_VALIDATE_INT);
 
 // We allow anonymous retrieval of product images, client must still be authenticated with client key
 if (!$this->l->isClientAuthenticated())
-	return Flight::json(Response::data(500, 'Client is not authenticated', 'image'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'image'), 401);
 
 if (!is_numeric($fid))
-	return Flight::json(Response::data(400, 'Invalid image identifier', 'image'));
+	return Flight::json(Response::data(400, 'Invalid image identifier', 'image'), 400);
 
 try {
 	$file=$this->api->view_file($fid, false, true);
@@ -259,12 +259,12 @@ try {
 }
 
 if (!property_exists($file, "image_styles"))
-	return Flight::json(Response::data(500, 'Image style error', 'image'));
+	return Flight::json(Response::data(500, 'Image style error', 'image'), 500);
 
 $styles=$file->image_styles;
 
 if (!property_exists($styles, "$style"))
-	return Flight::json(Response::data(412, 'Image style not configured', 'image'));
+	return Flight::json(Response::data(412, 'Image style not configured', 'image'), 412);
 
 return $this->dumpImageUrl('image/jpeg', $styles->$style);
 }
@@ -396,7 +396,7 @@ else if (isset($r['string']))
 if (isset($r['category'])) {
 	$t=$this->categoryMap($r['category']);
 	if ($t===false)
-		return Flight::json(Response::data(500, 'Invalid category filter', 'browse'));
+		return Flight::json(Response::data(500, 'Invalid category filter', 'browse'), 500);
 	$filter['type']=$t;
 }
 
@@ -437,7 +437,7 @@ $ip=$page===false ? (int)$r['page'] : $page;
 $a=$limit===false ? (int)$r['amount'] : $limit;
 
 if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
-	return Flight::json(Response::data(500, 'Invalid page or amount', 'products'));
+	return Flight::json(Response::data(500, 'Invalid page or amount', 'products'), 500);
 }
 
 $ps=array();

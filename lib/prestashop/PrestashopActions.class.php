@@ -114,7 +114,7 @@ $tmp=array(
  'u'=>$u['uid'],
  'e'=>$this->username
 );
-$u['apitoken']=json_encode($tmp);
+$u['apitoken']=$this->aes->encrypt(json_encode($tmp));
 
 return $u;
 }

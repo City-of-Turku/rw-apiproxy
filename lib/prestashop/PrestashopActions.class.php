@@ -22,6 +22,7 @@ protected $source_id=0; // Supplier or manufacturer
 protected $cmap;
 protected $source;
 
+protected $uid;
 protected $username;
 protected $password;
 
@@ -133,7 +134,15 @@ if (empty($r))
 $u=@json_decode($r);
 if (!$u)
 	return false;
+if (!is_object($u))
+	return false;
 
+if (!property_exists($u, "uid"))
+	return false;
+
+$this->uid=(int)$u->uid;
+
+slog("AuthCheck: ".$this->uid, $u);
 // XXX Add proper check
 
 return true;

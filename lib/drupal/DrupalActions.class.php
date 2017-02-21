@@ -1,6 +1,7 @@
 <?php
 
 require_once('DrupalServiceAPIClient.class.php');
+require_once('../AES.class.php');
 
 class DrupalActions extends BackendActionsInterface
 {
@@ -19,6 +20,8 @@ private $config;
 private $umap;
 private $map;
 
+private $aes;
+
 public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
@@ -26,6 +29,9 @@ $this->d->set_auth_type(AUTH_SESSION);
 $this->hmac_key=$config['hmac_key'];
 $this->decrypt_key=$config['key'];
 $this->umap=array();
+
+$this->aes=new AES($this->decrypt_key, $this->hmac_key);
+
 // Client API to Drupal Product field mapping
 $this->map=array(
  'sku'=>array(
@@ -144,29 +150,6 @@ public function set_auth($username, $password)
 return $this->d->set_auth($username, $password);
 }
 
-private function decrypt_token($token)
-{
-$tmp=base64_decode($token);
-$hash=substr($tmp, 0, 32);
-$iv=substr($tmp, 32, 16);
-$text=substr($tmp, 48);
-$chash=hash_hmac('sha256', $iv.$text, $this->hmac_key, true);
-if (!hash_equals($hash, $chash)) // XXX PHP 5.6->
-        return false;
-$tmp=mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $this->decrypt_key, $text, MCRYPT_MODE_CBC, $iv);
-return trim($tmp);
-return substr($tmp, 0, -ord($tmp[strlen($tmp)-1]));
-}
-
-private function encrypt_token($token)
-{
-$iv_size=mcrypt_get_iv_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
-$iv=mcrypt_create_iv($iv_size, MCRYPT_RAND);
-$tmp=mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $this->decrypt_key, $token, MCRYPT_MODE_CBC, $iv);
-$hash=hash_hmac('sha256', $iv.$tmp, $this->hmac_key, true);
-return base64_encode($hash.$iv.$tmp);
-}
-
 /**
  * Client sends us the encrypted session cookie data, auth+decrypt it and set the session data.
  * Returns: true if ok, false if data is wrong
@@ -192,7 +175,7 @@ return true;
 
 public function check_auth()
 {
-$tmp=$this->decrypt_token($this->token);
+$tmp=$this->aes->decrypt($this->token);
 
 if ($tmp===false)
         return false;
@@ -203,7 +186,7 @@ public function get_user()
 {
 $u=$this->d->get_user();
 
-$u['apitoken']=$this->encrypt_token($u['apitoken']);
+$u['apitoken']=$this->aes->encrypt($u['apitoken']);
 
 return $u;
 }

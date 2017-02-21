@@ -11,18 +11,22 @@ $this->c=$config;
 $this->expire=(60*60);
 }
 
-public Function newsFeed()
+protected Function headers()
 {
 header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + $this->expire));
-Header('Content-Type: application/rss+xml');
+header('Content-Type: application/rss+xml');
+}
+
+public Function newsFeed()
+{
+$this->headers();
 $data=@file_get_contents($this->c['news_url']);
 die($data);
 }
 
 public Function productsFeed()
 {
-header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + $this->expire));
-Header('Content-Type: application/rss+xml');
+$this->headers();
 $data=@file_get_contents($this->c['products_url']);
 die($data);
 }

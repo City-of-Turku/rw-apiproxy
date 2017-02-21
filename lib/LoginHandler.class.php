@@ -1,5 +1,7 @@
 <?php
 
+require_once('AES.class.php');
+
 /**
  * Handle user authentication to services
  *

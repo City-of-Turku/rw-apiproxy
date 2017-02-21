@@ -1,7 +1,5 @@
 <?php
-
 require_once('DrupalServiceAPIClient.class.php');
-require_once('../AES.class.php');
 
 class DrupalActions extends BackendActionsInterface
 {

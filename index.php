@@ -33,6 +33,7 @@ if(!function_exists('hash_equals')) {
 }
 
 require('vendor/autoload.php');
+require_once('lib/AES.class.php');
 require('lib/Syslog.php');
 require('lib/Product.class.php');
 require('lib/BackendActionsInterface.class.php');

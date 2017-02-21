@@ -25,6 +25,9 @@ protected $source;
 protected $username;
 protected $password;
 
+private $hmac_key;
+private $decrypt_key;
+
 // What are we using
 const SRC_SUPPLIER=1;
 const SRC_MANUFACTURER=2;
@@ -51,6 +54,8 @@ $this->source=self::SRC_SUPPLIER;
 $this->api_base_url=$api_config['api_base_url'];
 $this->presta_base_url=$config['url'];
 $this->pwdsalt=$config['presta_salt'];
+
+$this->aes=new AES($this->decrypt_key, $this->hmac_key);
 
 // Load client categorykey => (presta,id,map)
 $this->cmap=json_decode(file_get_contents($config['categorymap']), true);;
@@ -83,20 +88,18 @@ if (!filter_var($this->username, FILTER_VALIDATE_EMAIL))
 	throw new Exception('Authentication error (0)', 403);
 
 $cpwd=md5($this->pwdsalt.$this->password);
-$s=$mysqli->prepare("select id_employee,lastname,firstname,email,password FROM ps_employee WHERE active=1 AND email=? AND passwd=?");
+$s=$this->db->prepare("select id_employee,lastname,firstname,email FROM ps_employee WHERE active=1 AND email=? AND passwd=?");
 if (!$s)
-	throw new Exception('Authentication error (1)', 403);
+	throw new Exception('Authentication error (1)'.$this->db->error, 403);
 
 $s->bind_param("ss", $this->username, $cpwd);
 
 if (!$s->execute())
 	throw new Exception('Authentication error (2)', 403);
 
-$r=$s->get_result();
-if (!$r)
-	throw new Exception('Authentication error (3)', 403);
+$r=$this->db->store_result();
 
-$o=$res->fetch_object();
+$o=$r->fetch_object();
 if (!$o)
 	throw new Exception('Authentication error (4)', 403);
 
@@ -118,6 +121,18 @@ return $u;
 
 public function check_auth()
 {
+if (empty($this->token))
+	return false;
+
+$r=$this->aes->decrypt($this->token);
+if (empty($r))
+	return false;
+$u=@json_decode($r);
+if (!$u)
+	return false;
+
+// XXX Add proper check
+
 return true;
 }
 

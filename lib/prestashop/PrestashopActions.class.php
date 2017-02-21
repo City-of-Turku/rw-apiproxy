@@ -26,6 +26,8 @@ protected $uid;
 protected $username;
 protected $password;
 
+protected $shops;
+
 private $hmac_key;
 private $decrypt_key;
 
@@ -58,6 +60,8 @@ $this->pwdsalt=$config['presta_salt'];
 
 $this->hmac_key=$config['hmac_key'];
 $this->decrypt_key=$config['token_key'];
+
+$this->shops=array();
 
 $this->aes=new AES($this->decrypt_key, $this->hmac_key);
 
@@ -92,33 +96,28 @@ if (!filter_var($this->username, FILTER_VALIDATE_EMAIL))
 	throw new Exception('Authentication error (0)', 403);
 
 $cpwd=md5($this->pwdsalt.$this->password);
-$s=$this->db->prepare("select id_employee,lastname,firstname,email FROM ps_employee WHERE active=1 AND email=? AND passwd=?");
-if (!$s)
-	throw new Exception('Authentication error (1)'.$this->db->error, 403);
 
-$s->bind_param("ss", $this->username, $cpwd);
+$sql=sprintf("select id_employee,lastname,firstname,email FROM ps_employee WHERE active=1 AND email='%s' AND passwd='%s'",
+	$this->db->escape_string($this->username), $cpwd);
+$o=$this->dbquery($sql);
+if ($o===false)
+	throw new Exception('Authentication error (1)', 403);
 
-if (!$s->execute())
-	throw new Exception('Authentication error (2)', 403);
-
-$r=$this->db->store_result();
-
-$o=$r->fetch_object();
-if (!$o)
-	throw new Exception('Authentication error (4)', 403);
-
-$r->close();
+slog("User", $o);
 
 $u=array();
 $u['username']=$this->username;
-$u['uid']=$o->id_employee;
 $u['email']=$this->username;
+$u['uid']=$o->id_employee;
 
 $tmp=array(
- 'u'=>$u['uid'],
- 'e'=>$this->username
+	'u'=>$u['uid'],
+	'e'=>$this->username
 );
 $u['apitoken']=$this->aes->encrypt(json_encode($tmp));
+
+$this->uid=$o->id_employee;
+$this->getUserShops();
 
 return $u;
 }
@@ -127,7 +126,6 @@ public function check_auth()
 {
 if (empty($this->token))
 	return false;
-
 $r=$this->aes->decrypt($this->token);
 if (empty($r))
 	return false;
@@ -137,12 +135,14 @@ if (!$u)
 if (!is_object($u))
 	return false;
 
-if (!property_exists($u, "uid"))
+if (!property_exists($u, "u"))
 	return false;
 
-$this->uid=(int)$u->uid;
+$this->uid=(int)$u->u;
+if ($this->uid<1)
+	return false;
 
-slog("AuthCheck: ".$this->uid, $u);
+$this->getUserShops();
 // XXX Add proper check
 
 return true;
@@ -163,14 +163,19 @@ public function get_locations()
 {
 $loc=array();
 
-$def=new stdClass;
-$def->id=1;
-$def->location='Default';
-$def->zipcode='00000';
-$def->street='';
-$def->city='';
+slog($this->uid);
 
-$loc[$def->id]=$def;
+foreach ($this->shops as $s) {
+	$def=new stdClass;
+	$def->id=$s->id_shop;
+	$def->location=$s->name;
+	$def->zipcode='';
+	$def->street='';
+	$def->city='';
+	$loc[$def->id]=$def;
+}
+
+slog("locations", $loc);
 
 return $loc;
 }
@@ -220,6 +225,12 @@ if (!empty($data['tax']))
 
 if (!empty($data['weight']) && is_numeric($data['weight']) && $data['weight']>0)
 	$p->weight=$data['weight'];
+
+if (array_key_exists($data['location'], $this->shops)) {
+	$this->shop_id=(int)$data['location'];
+} else {
+	throw new Exception('Invalid shop');
+}
 
 slog("Data", $data);
 slog("Product", $p);
@@ -344,6 +355,17 @@ switch ($this->source) {
 return false;
 }
 
+protected Function dbquery($sql)
+{
+$r=false;
+if (!$res=$this->db->query($sql))
+	return false;
+if ($res->num_rows>0)
+	$r=$res->fetch_object();
+$res->close();
+return $r;
+}
+
 protected Function checkSupplierApiKey($key)
 {
 $r=false;
@@ -379,6 +401,21 @@ if ($res=$this->db->query($sql)) {
 	$res->close();
 }
 return $r;
+}
+
+protected Function getUserShops()
+{
+$this->shops=array();
+$sql=sprintf("select es.id_shop,name from ps_employee_shop as es,ps_shop as s where es.id_shop=s.id_shop and active=1 and id_employee=%d", $this->uid);
+if ($res=$this->db->query($sql)) {
+	while ($row = $res->fetch_object()) {		
+        	$this->shops[$row->id_shop]=$row;
+	}
+	slog("Shops", $this->shops);
+	$res->close();
+	return true;
+}
+throw new Exception('Failed to get user shops');
 }
 
 /**

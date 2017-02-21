@@ -70,7 +70,7 @@ switch ($api['backend']) {
 	break;
 	case 'prestashop':
 		$bc=$config['Prestashop'];
-		$be=new PrestashopActions($api, $bc, array());
+		$be=new PrestashopActions($api, $bc);
 	break;
 	default:
 		die('Backend not set or invalid');
@@ -102,11 +102,12 @@ Flight::route('GET /user/@id:[0-9]{1,6}', array($l, 'user'));
 // Product related requests
 Flight::route('GET /product/barcode/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'searchBarcode'));
 Flight::route('GET /product/image/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
-Flight::route('GET /products/categories', array($p, 'categories'));
 Flight::route('GET /product/latest', array($news, 'productsFeed'));
 Flight::route('GET /products/search', array($p, 'search'));
 Flight::route('GET /products/@page:[0-9]{1,4}', array($p, 'browse'));
 Flight::route('GET /products', array($p, 'browse'));
+
+Flight::route('GET /categories', array($p, 'categories'));
 
 Flight::route('POST /product', array($p, 'add'));
 Flight::route('PUT /product', array($p, 'update'));

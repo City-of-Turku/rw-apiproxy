@@ -41,15 +41,17 @@ protected $debug=false;
 
 protected $img_style='large_default';
 
-public Function __construct(array $api_config, array $config, array $cmap)
+public Function __construct(array $api_config, array $config)
 {
 $this->pws=new PrestaShopWebservice($config['url'], $config['key'], $this->debug);
 $this->products=array();
 $this->product_stock_map=array();
 $this->source=self::SRC_SUPPLIER;
-$this->cmap=$cmap;
 $this->api_base_url=$api_config['api_base_url'];
 $this->presta_base_url=$config['url'];
+
+// Load client categorykey => (presta,id,map)
+$this->cmap=json_decode(file_get_contents($config['categorymap']), true);;
 
 $this->db=new mysqli($config['host'], $config['user'], $config['password'], $config['db']);
 if ($this->db->connect_error)
@@ -139,13 +141,32 @@ return $i;
 
 public function add_product($data, array $files)
 {
-// print_r($data);die();
-// XXX
 $p=new Product();
 $p->sku=array($data['barcode']);
 $p->description=$data['description'];
 $p->name=$data['title'];
 $p->images=$files;
+// Subcategory is more specific so use it if set
+$p->category=empty($data['subcategory'] ? $data['category'] : $data['subcategory']);
+if (isset($data['stock']) && is_numeric($data['stock']) && (int)$data['stock']>0)
+	$p->quantity=(int)$data['stock'];
+
+if (!empty($data['ean'])) {
+	$p->ean13=$data['ean'];
+} else if (!empty($data['isbn'])) {
+	$p->ean13=$data['isbn'];
+}
+
+if (!empty($data['price']))
+	$p->price=$data['price'];
+if (!empty($data['tax']))
+	$p->tax=$data['tax'];
+
+if (!empty($data['weight']) && is_numeric($data['weight']) && $data['weight']>0)
+	$p->weight=$data['weight'];
+
+slog("Data", $data);
+slog("Product", $p);
 
 return $this->addProduct($p);
 }
@@ -186,8 +207,8 @@ foreach ($xps as $ptmp) {
 	$po->price=(float)$p->price;
 	$po->purpose=0;
 	$po->location=0;
-	$po->category='';
-	$po->subcategory='';
+	$po->category=''; // XXX
+	$po->subcategory=''; // XXX
 	$po->description=(string)$p->description[0];
 	$img=array();
 	foreach ($p->associations->images[0] as $il) {
@@ -308,7 +329,6 @@ return $r;
  * Create a new apikey from given serial, apikey is md5 of salt+serial
  * Only active serials are allowed, others will not be accepted.
  */
-
 public Function addApikeyFromSerial($serial)
 {
 if ($this->validate_key($serial, 16)===false)
@@ -1141,7 +1161,7 @@ for ($l=0;$l<$langs;$l++) {
 	$resources->description_short->language[$l] = $p->description!=='' ? $p->description : '';
 }
 
-//xxx
+// XXX
 $resources->condition = 'used';
 
 // Default category
@@ -1210,11 +1230,10 @@ foreach ($p->sku as $sku) {
 	$this->products[$id]=$xml;
 	$this->product_stock_map[$id]=$resources->associations->stock_availables->stock_available[0]->id;
 
-	if (!is_array($p->images))
-		continue;
-
 	// Add the images
-	$this->addProductImagesFromUpload($id, $p->images);
+	if (is_array($p->images)) {
+		$this->addProductImagesFromUpload($id, $p->images);
+	}
 
 	// Set product stock
 	$this->setProductStock($id, $p->quantity, 'set');
@@ -1230,20 +1249,27 @@ foreach ($p->sku as $sku) {
 return true;
 }
 
+/**
+ * addProductImagesFromUpload
+ *
+ * Attach uploaded images to product of given id
+ */
 protected Function addProductImagesFromUpload($id, array $images)
 {
+$errors=array();
 $c=count($images['name']);
 slog("Images for $id ".$c);
 for ($i=0;$i<$c;$i++) {
 	if ($images['error'][$i]!=0) {
 		$errors[]=$images['name'][$i];
-		slog("Image upload error ".$images['error'][$i]);
+		slog("Image upload error ", $images['error'][$i]);
 		continue;
 	}
 
 	$ires=$this->addProductImage($id, $images['tmp_name'][$i]);
 	slog("Image add for $id ", $ires ? "OK": "Failed ".$images['tmp_name'][$i]." - ".$images['name'][$i]);
 }
+return true;
 }
 
 protected Function addProductImage($id, $image)
@@ -1255,7 +1281,7 @@ try {
 	return $this->pws->add($opt);
 } catch (PrestaShopWebserviceException $ex) {
 	$this->err=$ex->getMessage();
-	slog("addProductImage for $id failed ".$ex->getMessage());
+	slog("addProductImage failed", $id, $ex);
 }
 return false;
 }

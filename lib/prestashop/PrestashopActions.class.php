@@ -50,10 +50,13 @@ public Function __construct(array $api_config, array $config)
 $this->pws=new PrestaShopWebservice($config['url'], $config['key'], $this->debug);
 $this->products=array();
 $this->product_stock_map=array();
-$this->source=self::SRC_SUPPLIER;
+$this->source=self::SRC_MANUFACTURER;
 $this->api_base_url=$api_config['api_base_url'];
 $this->presta_base_url=$config['url'];
 $this->pwdsalt=$config['presta_salt'];
+
+$this->hmac_key=$config['hmac_key'];
+$this->decrypt_key=$config['token_key'];
 
 $this->aes=new AES($this->decrypt_key, $this->hmac_key);
 
@@ -143,7 +146,6 @@ return true;
 
 public function auth_apikey($key)
 {
-// return true;
 return $this->checkApiKey($key);
 }
 

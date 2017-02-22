@@ -103,8 +103,6 @@ $o=$this->dbquery($sql);
 if ($o===false)
 	throw new Exception('Authentication error (1)', 403);
 
-slog("User", $o);
-
 $u=array();
 $u['username']=$this->username;
 $u['email']=$this->username;
@@ -163,8 +161,6 @@ public function get_locations()
 {
 $loc=array();
 
-slog($this->uid);
-
 foreach ($this->shops as $s) {
 	$def=new stdClass;
 	$def->id=$s->id_shop;
@@ -174,8 +170,6 @@ foreach ($this->shops as $s) {
 	$def->city='';
 	$loc[$def->id]=$def;
 }
-
-slog("locations", $loc);
 
 return $loc;
 }
@@ -231,9 +225,6 @@ if (array_key_exists($data['location'], $this->shops)) {
 } else {
 	throw new Exception('Invalid shop');
 }
-
-slog("Data", $data);
-slog("Product", $p);
 
 return $this->addProduct($p);
 }
@@ -408,10 +399,9 @@ protected Function getUserShops()
 $this->shops=array();
 $sql=sprintf("select es.id_shop,name from ps_employee_shop as es,ps_shop as s where es.id_shop=s.id_shop and active=1 and id_employee=%d", $this->uid);
 if ($res=$this->db->query($sql)) {
-	while ($row = $res->fetch_object()) {		
+	while ($row = $res->fetch_object()) {
         	$this->shops[$row->id_shop]=$row;
 	}
-	slog("Shops", $this->shops);
 	$res->close();
 	return true;
 }
@@ -452,9 +442,7 @@ protected Function addManufacturerApikeyFromSerial($serial)
 {
 $key=$this->createApiKeyFromSerial($serial);
 $sql=sprintf("update ps_address set apikey='%s' where apikey is null and deleted=0 and other='%s'", $key, $serial);
-slog("addManufacturerApikeyFromSerial", $sql);
 if ($this->db->query($sql)) {
-	slog("addManufacturerApikeyFromSerial", $this->db->affected_rows);
 	if ($this->db->affected_rows==1)
 		return $key;
 }

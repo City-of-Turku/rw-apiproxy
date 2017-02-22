@@ -71,6 +71,7 @@ $this->cmap=json_decode(file_get_contents($config['categorymap']), true);;
 $this->db=new mysqli($config['host'], $config['user'], $config['password'], $config['db']);
 if ($this->db->connect_error)
 	throw new Exception('DB Failure '.$this->db->connect_error, $this->db->connect_errno);
+$this->db->query('SET CHARACTER SET utf8');
 }
 
 public function set_auth($username, $password)

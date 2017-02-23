@@ -27,6 +27,7 @@ protected $username;
 protected $password;
 
 protected $shops;
+protected $taxes;
 
 private $hmac_key;
 private $decrypt_key;
@@ -62,6 +63,8 @@ $this->hmac_key=$config['hmac_key'];
 $this->decrypt_key=$config['token_key'];
 
 $this->shops=array();
+
+$this->taxes=array(0=>0,1=>24,2=>14,3=>10);
 
 $this->aes=new AES($this->decrypt_key, $this->hmac_key);
 
@@ -216,10 +219,13 @@ if (!empty($data['ean'])) {
 if (!empty($data['price']))
 	$p->price=$data['price'];
 if (!empty($data['tax']))
-	$p->tax=$data['tax'];
+	$p->tax=(int)$data['tax'];
 
-if (!empty($data['weight']) && is_numeric($data['weight']) && $data['weight']>0)
-	$p->weight=$data['weight'];
+$attrs=array('weight','width','depth','height');
+foreach ($attrs as $at) {
+	if (!empty($data[$at]) && is_numeric($data[$at]) && $data[$at]>0)
+		$p->$at=(int)$data[$at];
+}
 
 if (array_key_exists($data['location'], $this->shops)) {
 	$this->shop_id=(int)$data['location'];
@@ -283,7 +289,7 @@ foreach ($xps as $ptmp) {
 	//$po->thumbnail=(string)$p->id_default_image[0]->attributes('xlink', true)->href;
 	if (count($img)>0)
 		$po->thumbnail=$img[0];
-	
+
 	// print_r($po);die();
 
 	$ps[$po->barcode]=$po;
@@ -1245,6 +1251,14 @@ for ($l=0;$l<$langs;$l++) {
 
 // XXX
 $resources->condition = 'used';
+
+$resources->ean13=$p->ean13;
+
+$resources->weight=$p->weight;
+
+$resources->width=$p->width;
+$resources->depth=$p->depth;
+$resources->height=$p->height;
 
 // Default category
 $resources->associations->categories->addChild('category')->addChild('id', $this->default_cid);

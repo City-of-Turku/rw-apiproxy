@@ -19,4 +19,5 @@ public $category;
 public $quantity=1;
 public $class=false;
 public $images;
+public $ean='';
 }

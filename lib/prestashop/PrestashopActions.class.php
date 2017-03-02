@@ -211,13 +211,13 @@ if (isset($data['stock']) && is_numeric($data['stock']) && (int)$data['stock']>0
 	$p->quantity=(int)$data['stock'];
 
 if (!empty($data['ean'])) {
-	$p->ean13=$data['ean'];
+	$p->ean=$data['ean'];
 } else if (!empty($data['isbn'])) {
-	$p->ean13=$data['isbn'];
+	$p->ean==$data['isbn'];
 }
 
 if (!empty($data['price']))
-	$p->price=$data['price'];
+	$p->price=(float)$data['price'];
 if (!empty($data['tax']))
 	$p->tax=(int)$data['tax'];
 
@@ -232,6 +232,11 @@ if (array_key_exists($data['location'], $this->shops)) {
 } else {
 	throw new Exception('Invalid shop');
 }
+
+//foreach ($data as $k => $v)
+//	slog("Key: ".$k, "$v");
+
+//slog("Prod", $p);
 
 return $this->addProduct($p);
 }
@@ -254,27 +259,34 @@ if (!$xml)
 
 $xps=$xml->children()->children();
 
-foreach ($xps as $ptmp) {
-	$a=$ptmp->attributes();
-	$pxml=$this->getProduct($a->id);
-	if (!$pxml) {
-		slog("Failed to fetch product data");
-		continue;
-	}
-	$p=$pxml->children()->children();
+foreach ($xps as $prod) {
+	$p=$prod->children();
 	$po=new stdClass;
 
-	$po->id=$a->id;
+	//print_r($p);
+
+	$po->id=(string)$p->id;
 	$po->barcode=(string)$p->reference;
 	$po->ean=(string)$p->ean13;
-	$po->title=(string)$p->name[0];
-	$po->stock=(int)$p->quantity;
+	$po->title=(string)$p->name->language[0];
+	//$po->stock=(int)$p->quantity;
 	$po->price=(float)$p->price;
+	$po->location=(int)$p->id_shop_default;
 	$po->purpose=0;
-	$po->location=0;
 	$po->category=''; // XXX
 	$po->subcategory=''; // XXX
-	$po->description=(string)$p->description[0];
+	$po->description=(string)$p->description->language[0];
+
+	//$po->thumbnail=(string)$p->id_default_image->attributes('xlink', true)->href;
+
+	$sid=$p->associations->stock_availables->stock_available[0]->id;
+
+	$sxml=$this->getStockAvailable($sid);
+	if ($sxml!==false) {
+		$r=$sxml->children()->children();
+		$po->stock=(int)$r->quantity;
+	}
+
 	$img=array();
 	foreach ($p->associations->images[0] as $il) {
 		// Ok, we cheat here a bit and hope it works. Prestashop API gives images in a stupid way
@@ -283,17 +295,17 @@ foreach ($xps as $ptmp) {
 		// xlink:href api/images/products/14/27 <- that
 		//
 		$iurl=(string)$il->attributes('xlink', true)->href;
-		$img[]=sprintf('%s/product/image/%s/%d', $this->api_base_url, $this->img_style, (int)basename($iurl));
+		//$img[]=sprintf('%s%s/%d/product.jpg', $this->api_base_url, $this->img_style, (int)basename($iurl));
+		$img[]=sprintf('%s/%d/product.jpg', $this->api_base_url, (int)basename($iurl));
 	}
 	$po->images=$img;
 	//$po->thumbnail=(string)$p->id_default_image[0]->attributes('xlink', true)->href;
 	if (count($img)>0)
 		$po->thumbnail=$img[0];
 
-	// print_r($po);die();
-
 	$ps[$po->barcode]=$po;
 }
+//print_r($ps);die();
 //die();
 return $ps;
 }
@@ -367,6 +379,7 @@ return $r;
 protected Function checkSupplierApiKey($key)
 {
 $r=false;
+slog("checkSupplierApiKey", $key);
 $sql=sprintf("select apikey,id_shop,pss.id_supplier as id_supplier from ps_supplier as pss inner join ps_supplier_shop as psss where pss.id_supplier=psss.id_supplier and pss.active=1 and apikey='%s'", $key);
 if ($res=$this->db->query($sql)) {
 	if ($res->num_rows>0) {
@@ -383,6 +396,7 @@ return $r;
 protected Function checkManufacturerApiKey($key)
 {
 $r=false;
+slog("checkManufacturerApiKey", $key);
 $sql=sprintf("select apikey,id_shop,m.id_manufacturer,a.address2 from
 	ps_manufacturer as m,
 	ps_manufacturer_shop as ms,
@@ -409,6 +423,10 @@ if ($res=$this->db->query($sql)) {
 	while ($row = $res->fetch_object()) {
         	$this->shops[$row->id_shop]=$row;
 	}
+	$ds=reset($this->shops);
+	$this->shop_id=$ds->id_shop;
+	slog("Shops", $this->shops);
+	slog("User default shop is", $this->shop_id);
 	$res->close();
 	return true;
 }
@@ -518,8 +536,13 @@ try {
 	$opt=array('resource' => 'products');
 	if (is_numeric($this->shop_id))
 		$opt['id_shop']=$this->shop_id;
+	$opt['display']='full';
+	$opt['date']=1;
+	$opt['sort']='date_add_DESC';
 	$opt['limit']=sprintf('%d,%d', ($page-1)*$pagesize, $pagesize);
+	$opt['filter[active]']=1;
 	// XXX: Handle filter, sortby
+	slog("getProducts", $opt);
 	return $this->pws->get($opt);
 } catch (PrestaShopWebserviceException $ex) {
 	$this->err=$ex->getMessage();
@@ -1230,7 +1253,8 @@ switch ($tax) {
 		$resources->price = $p->price>0 ? sprintf('%F', $p->price/1.10) : 0; // 10% alv
 	break;
 	default:
-		slog("Unknown TAX ID");
+		slog("Unknown TAX ID", $tax);
+		throw new Exception('Invalid tax id');
 		return false;
 }
 
@@ -1252,7 +1276,7 @@ for ($l=0;$l<$langs;$l++) {
 // XXX
 $resources->condition = 'used';
 
-$resources->ean13=$p->ean13;
+$resources->ean13=$p->ean;
 
 $resources->weight=$p->weight;
 

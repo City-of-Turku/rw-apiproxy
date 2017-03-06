@@ -542,6 +542,20 @@ try {
 	$opt['limit']=sprintf('%d,%d', ($page-1)*$pagesize, $pagesize);
 	$opt['filter[active]']=1;
 	// XXX: Handle filter, sortby
+
+	if (is_array($filter)) {
+		slog("getProducts filter", $filter);
+		if (array_key_exists('sku', $filter)) {
+			$opt['filter[reference]']=$filter['sku'];
+			$opt['limit']=1;
+		} else if (array_key_exists('title', $filter)) {
+			// Prestashop API is stupid, we can do product title searching on the products API node
+			$opt['resource']='search';
+			$opt['query']=$filter['title'];
+			$opt['language']=1; // XXX
+		}
+	}
+
 	slog("getProducts", $opt);
 	return $this->pws->get($opt);
 } catch (PrestaShopWebserviceException $ex) {

@@ -90,7 +90,7 @@ return $fids;
 
 public Function searchBarcode($barcode)
 {
-if (!$this->validateBarcode($barcode))
+if (!$this->api->validateBarcode($barcode))
 	return Flight::json(Response::data(500, 'Invalid barcode', 'search'), 500);
 
 $filter=array(
@@ -238,7 +238,7 @@ if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
 
 $ps=array();
 try {
-	$ps=$this->api->index_products($ip, $a, null, $filter, $sortby);
+	$ps=$this->api->index_products($ip, $a, $filter, $sortby);
 } catch (Exception $e) {
 	Flight::json(Response::data(500, 'Data load failed', 'product', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 	return false;

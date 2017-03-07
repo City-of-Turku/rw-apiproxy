@@ -91,12 +91,9 @@ return $fids;
 public Function searchBarcode($barcode)
 {
 if (!$this->api->validateBarcode($barcode))
-	return Flight::json(Response::data(500, 'Invalid barcode', 'search'), 500);
+	return Flight::json(Response::data(500, 'Invalid barcode', 'searchBarcode'), 500);
 
-$filter=array(
-	'sku'=>$barcode
-);
-
+$filter=array('sku'=>$barcode);
 return $this->browseProducts(1, 1, $filter);
 }
 
@@ -243,6 +240,10 @@ try {
 	Flight::json(Response::data(500, 'Data load failed', 'product', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 	return false;
 }
+
+// Special case, search specific barcode
+if (count($ps)===0 && $page==1 && $limit==1 && is_array($filter))
+	return Flight::json(Response::data(404, 'Product not found', 'searchBarcode'), 404);
 
 $data=array('page'=>$ip, 'ramount'=>$a, 'amount'=>count($ps), 'products'=>$ps);
 Flight::json(Response::data(200, 'Products', 'products', $data));

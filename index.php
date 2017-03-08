@@ -106,7 +106,7 @@ Flight::route('GET /download/@apk', array($app, 'download'));
 
 // Orders
 Flight::route('GET /orders', array($order, 'orders'));
-//Flight::route('POST /orders', array($order, 'browse'));
+Flight::route('POST /orders', array($order, 'create'));
 
 // Storage locations list endpoint
 Flight::route('GET /locations', array($loc, 'locations'));

@@ -1,5 +1,7 @@
 <?php
 
+class OrderException extends Exception {}
+
 class OrderHandler
 {
 private $l;
@@ -38,6 +40,27 @@ try {
 
 $data=array('page'=>$ip, 'ramount'=>$a, 'amount'=>count($ps), 'orders'=>$ps);
 Flight::json(Response::data(200, 'Orders', 'orders', $data));
+}
+
+public Function create()
+{
+if (!$this->l->isAuthenticated())
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'create'));
+
+$r=Flight::request()->data;
+$ps=array();
+
+try {
+	$barcodes=$r['product'];
+	if (!is_array($barcodes))
+		throw new Exception('Invalid products');
+	$ps=$this->be->createProductOrderFromRef($barcodes);
+} catch (Exception $e) {
+	Flight::json(Response::data(500, 'Order creation failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	return false;
+}
+
+Flight::json(Response::data(201, 'Orders', 'create', $ps));
 }
 
 } // class

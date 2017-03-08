@@ -1002,9 +1002,12 @@ private Function getPriceWithTax($tax_group, $price)
  */
 public Function createProductOrderFromRef(array $barcodes)
 {
+if (count($barcodes)===0)
+	throw new Exception('Empty order');
+
 $xml=$this->getEmptyCart();
 if ($xml===false)
-	throw new Exception('Failed to get cart');
+	throw new Exception('Failed to create cart for order');
 
 $products=array();
 $quantity=array();
@@ -1121,7 +1124,12 @@ $order_id=$xmlo->order->id;
 // Order is now places, next update payment history
 $this->setOrderState($order_id, 5); // Delivered
 
-return $order_id;
+$res=array(
+	'order_id'=>(int)$order_id,
+	'total'=>$total
+);
+
+return $res;
 }
 
 private Function getEmptyOrderHistory()

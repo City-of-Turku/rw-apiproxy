@@ -1,6 +1,6 @@
 # RW-API Proxy
 
-API request proxy to a backend service.
+API request proxy to various shop backend services.
 
 License: GPLv3
 
@@ -9,6 +9,10 @@ Not yet fully stable. Documentation is work-in-progress.
 The purpose of the API proxy is it remove the need for the client application to know any backend
 specific details so that the backend can be changed to some other system or service without
 changes to the client software itself. 
+
+Supports:
+* Drupal Commerce
+* Prestashop
 
 This is to be used together with the rw-client application, also available on github at:
 * https://github.com/DigiTurku/rw-client
@@ -21,15 +25,19 @@ The proxy in itself is self-contained and does not depend on any Drupal or other
 
 ## Supported backends
 
-### Drupal 7 service and commerce_service REST API
+### Drupal Commerce, trough service and commerce_service REST APIs
 
 As the is a proxy for Drupal services the Drupal installation that it talks too need to have
 the following modules installed and setup (and their dependencies):
 * services
 * commerce_services
 
+### Prestashop, trough REST API
+Uses the Prestashop API and requires direct access to the prestashop database.
+
 ## Configuration
-Copy config.ini.sample to config.ini and modify Drupal service endpoints.
+Make a copy of config.ini.sample to config.ini and modify service endpoints, set any required API keys
+and choose a backend to use. See config.ini.sample for details.
 
 ## Responses
 All response bodies are in JSON format. 
@@ -50,8 +58,8 @@ For now, documentation for JSON response details is the code.
 
 ### Authentication
 
-* /auth/login POST Login to Drupal
-* /auth/logout POST Logout from Drupal
+* /auth/login POST Login to backend
+* /auth/logout POST Logout from backend
 * /auth/user GET Get information about logged in user
 
 ### Product (Drupal commerce service)
@@ -66,11 +74,20 @@ For now, documentation for JSON response details is the code.
 
 * /locations GET Get list of warehouse/locations
 
-### Todo endpoints
+### Oreders
+* /orders POST Create an order from list of products
+
+### ToDo
+
+* Add support for products list sort order using various fields
+* Filtering on specific detail
 
 These endpoints are planned, but not yet implemented
 
-* /orders
+* /orders GET list of my orders
+* /orders/@id/status GET order status
+* /orders/@id/status POST update order status
+
 * /products PUT update product
 * /products DELETE remove product
 * /products/categories

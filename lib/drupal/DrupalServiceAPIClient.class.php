@@ -261,7 +261,7 @@ $this->session_cookie=$this->user->session_name.'='.$this->user->sessid;
 $this->csrf_token=$this->user->token;
 $this->uid=$this->user->user->uid;
 
-$ut=sprintf('%s:%s:%s:%d', $this->user->sessid, $this->user->session_name, $this->csrf, $this->uid);
+$ut=sprintf('%s:%s:%s:%d', $this->user->sessid, $this->user->session_name, $this->csrf_token, $this->uid);
 
 $u=array();
 $u['apitoken']=$ut;
@@ -271,10 +271,11 @@ $u['created']=$ud->created;
 $u['access']=$ud->access;
 $u['email']=$ud->mail;
 $u['roles']=$ud->roles;
-if (property_exists($ur->user, "field_name")) {
+slog('User', json_encode($this->user));
+if (property_exists($ud, "field_name")) {
 	// XXX
 }
-if (property_exists($ur->user, "field_image")) {
+if (property_exists($ud, "field_image")) {
 	// XXX
 }
 

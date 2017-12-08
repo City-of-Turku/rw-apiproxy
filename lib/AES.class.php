@@ -25,14 +25,28 @@ $this->key=$key;
 $this->hmac_key=$hmac_key;
 }
 
+/**
+ * check_setup()
+ *
+ * Check that keys are set and correct size.
+ *
+ * Throws an Exception if something is wrong, otherwise does nothing.
+ */
 private function check_setup()
 {
-if (strlen($this->key)!==32)
+if (empty($this->key))
 	throw new Exception("Encryption key is not set");
-if (strlen($this->hmac_key)===0)
+if (strlen($this->key)!==32)
+	throw new Exception("Encryption key is wrong size");
+if (empty($this->hmac_key))
 	throw new Exception("HMAC key is not set");
 }
 
+/**
+ * decrypt()
+ *
+ * Decrypts given $token. Token must be base64 encoded.
+ */
 public function decrypt($token)
 {
 $this->check_setup();
@@ -48,6 +62,11 @@ if (!hash_equals($hash, $chash)) // XXX PHP 5.6->
 return openssl_decrypt($text, 'aes-256-cbc', $this->key, OPENSSL_RAW_DATA, $iv);
 }
 
+/**
+ * encrypt()
+ *
+ * Encrypts given $token, returns base64 encoded.
+ */
 public function encrypt($token)
 {
 $this->check_setup();

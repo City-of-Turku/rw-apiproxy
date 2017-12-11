@@ -135,6 +135,7 @@ if (!is_numeric($fid))
 try {
 	$file=$this->api->view_file($fid, false, true);
 } catch (Exception $e) {
+	slog('File', false, $e);
 	return Flight::json(Response::data(500, 'Image details load failed', 'image', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 }
 
@@ -237,6 +238,7 @@ $ps=array();
 try {
 	$ps=$this->api->index_products($ip, $a, $filter, $sortby);
 } catch (Exception $e) {
+	slog('browseProduct', false, $e);
 	Flight::json(Response::data(500, 'Data load failed', 'product', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 	return false;
 }

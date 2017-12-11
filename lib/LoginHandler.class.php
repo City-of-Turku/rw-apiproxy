@@ -21,31 +21,36 @@ $this->be=$be;
 $this->appdata=$app;
 $h=getallheaders();
 
-if (!$this->checkAuthenticationKey($h)) {
-	Flight::json(Response::data(403, 'Client not accepted', 'login'), 403);
+if (!$this->checkAuthenticationKey($h))
+	return;
+
+if (empty($h['X-Auth-Token'])) {
+	slog("X-Auth-Token is empty");
 	return;
 }
 
-if (empty($h['X-Auth-Token']))
-	return;
-
 $this->be->set_auth_token($h['X-Auth-Token']);
-$this->isAuth=$this->be->check_auth();
+try {
+	$this->isAuth=$this->be->check_auth();
+} catch (Exception $e) {
+	Flight::json(Response::data(500, 'Internal authentication failure', 'login', array('error'=>$e->getMessage())), 500);
+}
 }
 
 private function checkAuthenticationKey(array $h)
 {
 // XXX: Check against authorized client keys
-if (!empty($h['X-AuthenticationKey'])) {
-	$r=$this->be->auth_apikey($h['X-AuthenticationKey']);
-	if ($r) {
-		$this->isClientAuth=true;
-		return true;
-	}
-	slog("Client with invalid application key");
-} else {
+if (empty($h['X-AuthenticationKey'])) {
 	slog("Client with empty application key");
+	return false;
 }
+
+$r=$this->be->auth_apikey($h['X-AuthenticationKey']);
+if ($r) {
+	$this->isClientAuth=true;
+	return true;
+}
+slog("Client with invalid application key");
 $this->isClientAuth=false;
 $this->isAuth=false;
 return false;
@@ -104,11 +109,9 @@ try {
 
 	Flight::json(Response::data(200, 'Login OK', 'login', $u));
 } catch (Exception $e) {
+	slog("Login failure", 'login', $e);
 	Flight::json(Response::data(403, 'Login failure', 'login', array('error'=>$e->getMessage())), 403);
-	return false;
 }
-
-return true;
 }
 
 public function logout()

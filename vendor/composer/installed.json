@@ -1,17 +1,17 @@
 [
     {
         "name": "mikecao/flight",
-        "version": "v1.3.2",
-        "version_normalized": "1.3.2.0",
+        "version": "v1.3.5",
+        "version_normalized": "1.3.5.0",
         "source": {
             "type": "git",
             "url": "https://github.com/mikecao/flight.git",
-            "reference": "c3c6f689099937e6e4ecf25b7fe8c780df1500f9"
+            "reference": "e146b8c0ddbc6384c5a66f23dea71743fc282289"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/mikecao/flight/zipball/c3c6f689099937e6e4ecf25b7fe8c780df1500f9",
-            "reference": "c3c6f689099937e6e4ecf25b7fe8c780df1500f9",
+            "url": "https://api.github.com/repos/mikecao/flight/zipball/e146b8c0ddbc6384c5a66f23dea71743fc282289",
+            "reference": "e146b8c0ddbc6384c5a66f23dea71743fc282289",
             "shasum": ""
         },
         "require": {
@@ -20,7 +20,7 @@
         "require-dev": {
             "phpunit/phpunit": "~4.6"
         },
-        "time": "2016-10-25T19:27:20+00:00",
+        "time": "2017-10-20 01:46:56",
         "type": "library",
         "installation-source": "dist",
         "autoload": {

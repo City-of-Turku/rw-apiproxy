@@ -1,10 +1,102 @@
 {
-"huonekalu": [ "huonekalu", 1 ],
-"laite": [ "laite", 57 ],
-"kirja": [ "kirja", 16 ],
-"liikunta": [ "liikunta", 29 ],
-"askartelu": [ "askartelu", 104 ],
-"rakennusmateriaali": [ "rakennusmateriaali", 101 ],
-"sekalaiset": [ "sekalaiset", 101 ],
-"": 0
+    "huonekalu": {
+        "id": "huonekalu",
+        "name": "Huonekalut",
+        "hasSize": true,
+        "hasWeight": true,
+        "hasColor": false,
+        "hasStock": true,
+        "hasPrice": true,
+        "subcategories": {
+            "sohvat": {
+                "id": "sohvat",
+                "name": "Sohvat ja nojatuolit",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            },
+            "hyllyt": {
+                "id": "hyllyt",
+                "name": "Hylly ja lipastot",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            },
+            "poydat": {
+                "id": "poydat",
+                "name": "P\u00f6yd\u00e4t ja ruokaryhm\u00e4t",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            },
+            "tuolit": {
+                "id": "tuolit",
+                "name": "Tuolit ja penkit",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            },
+            "sangyt": {
+                "id": "sangyt",
+                "name": "S\u00e4ngyt ja patjat",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            },
+            "toimisto": {
+                "id": "toimisto",
+                "name": "Toimistokalusteet",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            },
+            "hksekal": {
+                "id": "hksekal",
+                "name": "Sekalaiset",
+                "hasSize": true,
+                "hasWeight": true,
+                "hasColor": false,
+                "hasEAN": true,
+                "hasStock": true,
+                "hasPrice": true
+            }
+        }
+    },
+    "laite": {
+        "id": "laite",
+        "name": "Laite",
+        "hasSize": true,
+        "hasWeight": true,
+        "hasStock": true,
+        "hasPrice": true,
+        "subcategories": {}
+    },
+    "sekalaiset": {
+        "id": "sekalaiset",
+        "name": "Sekalaiset",
+        "hasSize": true,
+        "hasWeight": true,
+        "hasEAN": true,
+        "hasStock": true,
+        "hasPrice": true,
+        "subcategories": {}
+    }
 }

@@ -48,6 +48,12 @@ HTTP error codes are used to report success and failure.
 Implements simple, easy to use API method endpoints for the following functions.
 For now, documentation for JSON response details is the code.
 
+## Keys
+
+Configure encryption keys, you can generate suitable ones with
+
+ openssl enc -aes-256-cbc -k <yoursecretpassword> -P -md sha1
+
 ## Implemented endpoints (endpoint method description)
 
 ### Generic

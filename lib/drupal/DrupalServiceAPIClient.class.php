@@ -72,11 +72,6 @@ public function set_currency($c)
 $this->currency=$c;
 }
 
-public function set_auth_type($t)
-{
-$this->auth=$t;
-}
-
 public function set_auth($username, $password)
 {
 if (!is_string($username))
@@ -89,16 +84,7 @@ $this->password=$password;
 
 public function login()
 {
-switch ($this->auth) {
-	case AUTH_ANONYMOUS:
-		return true;
-	case AUTH_SESSION:
-		return $this->login_session();
-	case AUTH_BASIC:
-		return true;
-	default:
-		throw new DrupalServiceException('Unknown authentication selected', 0);
-}
+return $this->login_session();
 }
 
 public function set_debug($bool)
@@ -120,16 +106,8 @@ $options=array(
 	CURLOPT_HTTPHEADER => $header);
 curl_setopt_array($curl, $options);
 
-switch ($this->auth) {
-	case AUTH_BASIC:
-		curl_setopt($curl, CURLOPT_HTTPAUT, CURLAUTH_BASIC);
-		curl_setopt($curl, CURLOPT_USERPWD, $this->username.':'.$this->password);
-	break;
-	case AUTH_SESSION:
-		if (is_string($this->session_cookie))
-			curl_setopt($curl, CURLOPT_COOKIE, $this->session_cookie);
-	break;
-}
+if (is_string($this->session_cookie))
+	curl_setopt($curl, CURLOPT_COOKIE, $this->session_cookie);
 
 return $curl;
 }
@@ -490,8 +468,8 @@ $param=array(
 );
 if (is_array($fields))
 	$param['fields']=implode(',', $fields);
-if (is_array($params))
-	$param['parameters']=$params;
+//if (is_array($params))
+//	$param['parameters']=$params;
 if (is_array($filter)) {
 	foreach ($filter as $f=>$q) {
 		$k=sprintf('filter[%s]', $f);

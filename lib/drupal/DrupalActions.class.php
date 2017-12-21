@@ -9,13 +9,12 @@ private $session_id;
 private $session_name;
 private $session_token;
 
-private $hmac_key;
-private $decrypt_key;
-
 private $api_config;
 private $config;
 
+private $cmap;
 private $umap;
+private $umapr;
 private $map;
 
 private $aes;
@@ -23,12 +22,10 @@ private $aes;
 public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
-$this->d->set_auth_type(AUTH_SESSION);
-$this->hmac_key=$config['hmac_key'];
-$this->decrypt_key=$config['key'];
 $this->umap=array();
+$this->umapr=array();
 
-$this->aes=new AES($this->decrypt_key, $this->hmac_key);
+$this->aes=new AES($config['key'], $config['hmac_key']);
 
 // Client API to Drupal Product field mapping
 $this->map=array(
@@ -143,6 +140,30 @@ slog('Purpose id not found in reverse map', json_encode($u));
 return 0;
 }
 
+/**
+ * categoryMap()
+ *
+ * Validate given category id against known categories.
+ *
+ */
+public Function categoryMap($ts)
+{
+if (array_key_exists($ts, $this->cmap))
+	return $ts;
+return false;
+}
+
+public Function setCategoryMap(array &$cmap)
+{
+$this->cmap=$cmap;
+}
+
+protected Function categorySubMap($ts)
+{
+// XXX: Implement this
+return 0;
+}
+
 public function set_auth($username, $password)
 {
 return $this->d->set_auth($username, $password);
@@ -158,40 +179,50 @@ if (!is_string($data) || $data===false)
 	return false;
 
 $s=explode(':', $data);
+$this->uid=(int)$s[3];
+
+if ($this->uid<1) {
+        slog('Invalid user id', $this->uid);
+	return false;
+}
+
+slog('User data', json_encode($s));
+
 $this->session_id=$s[0];
 $this->session_name=$s[1];
 $this->session_token=$s[2];
-$this->uid=(int)$s[3];
 
-if ($this->uid<1)
-	return false;
-
-$this->be->set_session_data($this->session_id, $this->session_name, $this->session_token, $this->uid);
+$this->d->set_session_data($this->session_id, $this->session_name, $this->session_token, $this->uid);
 
 return true;
 }
 
 public function check_auth()
 {
+if (empty($this->token))
+	return false;
+
 $tmp=$this->aes->decrypt($this->token);
 
 if ($tmp===false)
         return false;
+
 return $this->setAuthdata($tmp);
 }
 
 public function get_user()
 {
-$u=$this->d->get_user();
 
-$u['apitoken']=$this->aes->encrypt($u['apitoken']);
-
-return $u;
 }
 
 public function login()
 {
-return $this->d->login();
+$u=$this->d->login();
+if ($u===false)
+	throw new Exception('Authentication error', 403);
+
+$u['apitoken']=$this->aes->encrypt($u['apitoken']);
+return $u;
 }
 
 public function logout()
@@ -214,7 +245,7 @@ return $this->d->retrieve_view('locations');
 // Categories
 public function get_categories()
 {
-// return $this->d->retrieve_view('categories');
+//return $this->d->retrieve_view('categories');
 return false;
 }
 
@@ -224,9 +255,9 @@ public function upload_file($file, $filename=null)
 return $this->d->upload_file($file, $filename, true);
 }
 
-public function view_file($fid, $data=false)
+public function view_file($fid, $data=false, $styles=false)
 {
-return $this->d->view_file($fid, $data, false);
+return $this->d->view_file($fid, $data, $styles);
 }
 
 protected Function addImagesFromUpload(array $images, array &$errors)

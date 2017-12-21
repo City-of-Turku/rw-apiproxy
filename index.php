@@ -71,13 +71,13 @@ $order = new OrderHandler($l, $be);
 $app = new ApplicationHandler($l, $appdata);
 $news = new NewsHandler($api);
 
-Flight::route('/', function(){
-  Flight::json(Response::data(200, 'API Version 3', 'version', array('version'=>3, 'level'=>1)));
-});
+function versionResponse() {
+ Flight::json(Response::data(200, 'API Version 3', 'version', array('version'=>3, 'level'=>1)));
+ die();
+}
 
-Flight::route('GET /version', function(){
-  Flight::json(Response::data(200, 'API Version 3', 'version', array('version'=>3, 'level'=>1)));
-});
+Flight::route('GET /', 'versionResponse');
+Flight::route('GET /version', 'versionResponse');
 
 // Authentication & current user
 Flight::route('POST /auth/login', array($l, 'login'));
@@ -115,15 +115,16 @@ Flight::route('GET /locations', array($loc, 'locations'));
 Flight::route('GET /news', array($news, 'newsFeed'));
 
 Flight::map('notFound', function(){
- Flight::json(array('error' => 404), 404);
+  Flight::json(Response::data(404, 'Not found', 'error'), 404);
 });
 
-Flight::map('error', function(Exception $e) {
-	$c=$e->getCode();
-	if ($c<400)
-		$c=500;
-	$m=$e->getMessage().' '.$e->getLine();
-	Flight::json(Response::data($c, $m, 'error'), 500);
+Flight::map('error', function($e) {
+  $c=$e->getCode();
+  if ($c<400)
+    $c=500;
+  $m=$e->getMessage().' '.$e->getLine();
+  slog("Generic error: ".$m, $e);
+  Flight::json(Response::data($c, $m, 'error'), 500);
 });
 
 Flight::start();

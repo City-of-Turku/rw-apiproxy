@@ -24,6 +24,8 @@ $this->cmap=json_decode(file_get_contents('colormap.json'), true);
 $this->umap=json_decode(file_get_contents('usagemap.json'), true);
 $this->umapr=array_flip($this->umap);
 $this->catmap=json_decode(file_get_contents('categorymap.json'), true);
+
+$this->api->setCategoryMap($this->catmap);
 }
 
 /**
@@ -123,7 +125,7 @@ public Function getProductImage($style, $fid)
 $style=filter_var($style, FILTER_SANITIZE_STRING);
 $fid=filter_var($fid, FILTER_VALIDATE_INT);
 
-slog($style.$fid);
+slog('Image requested: '.$style.$fid);
 
 // We allow anonymous retrieval of product images, client must still be authenticated with client key
 if (!$this->l->isClientAuthenticated())
@@ -135,14 +137,18 @@ if (!is_numeric($fid))
 try {
 	$file=$this->api->view_file($fid, false, true);
 } catch (Exception $e) {
-	slog('File', false, $e);
+	slog('Image load failed', false, $e);
 	return Flight::json(Response::data(500, 'Image details load failed', 'image', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 }
 
 if (!property_exists($file, "image_styles"))
 	return Flight::json(Response::data(500, 'Image style error', 'image'), 500);
 
+slog("File", $file);
+
 $styles=$file->image_styles;
+if (!is_object($styles))
+	return Flight::json(Response::data(412, 'Image styles are invalid', 'image'), 412);
 
 if (!property_exists($styles, "$style"))
 	return Flight::json(Response::data(412, 'Image style not configured', 'image'), 412);
@@ -190,7 +196,7 @@ else if (isset($r['string']))
 	$filter['title']=filter_var(trim($r['string']), FILTER_SANITIZE_STRING);
 
 if (isset($r['category'])) {
-	$t=$this->categoryMap($r['category']);
+	$t=$this->api->categoryMap($r['category']);
 	if ($t===false)
 		return Flight::json(Response::data(500, 'Invalid category filter', 'browse'), 500);
 	$filter['type']=$t;
@@ -249,20 +255,6 @@ if (count($ps)===0 && $page==1 && $limit==1 && is_array($filter))
 
 $data=array('page'=>$ip, 'ramount'=>$a, 'amount'=>count($ps), 'products'=>$ps);
 Flight::json(Response::data(200, 'Products', 'products', $data));
-}
-
-protected Function categoryMap($ts)
-{
-$vc=array("huonekalu", "laite", "kirja", "askartelu", "liikunta", "muu");
-if (in_array($ts, $vc, true))
-	return $ts;
-return false;
-}
-
-protected Function categorySubMap($ts)
-{
-// XXX:!!!
-return 0;
 }
 
 protected Function mapVariable($id, $df, array &$o, array &$er)

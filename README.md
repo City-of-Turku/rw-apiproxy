@@ -43,6 +43,18 @@ and choose a backend to use. See config.ini.sample for details.
 All response bodies are in JSON format. 
 HTTP error codes are used to report success and failure.
 
+### JSON API Response format
+
+All JSON responses have two top-level objects: meta and data
+
+"meta" has always the properties:
+* "code": Response code, follows the HTTP response code logic (200-OK, etc)
+* "op": The operation this response is for
+* "message": Human readable response message
+* "version": API version, currently 1
+
+"data" is endpoint specific and can be empty.
+
 ## API endpoints
 
 Implements simple, easy to use API method endpoints for the following functions.

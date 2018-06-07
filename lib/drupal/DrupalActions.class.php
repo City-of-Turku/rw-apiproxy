@@ -27,6 +27,9 @@ $this->umapr=array();
 
 $this->aes=new AES($config['key'], $config['hmac_key']);
 
+if (isset($config['debug']) && $config['debug'])
+	$this->d->set_debug(true);
+
 // Client API to Drupal Product field mapping
 $this->map=array(
  'sku'=>array(

@@ -112,15 +112,6 @@ if (is_string($this->session_cookie))
 return $curl;
 }
 
-protected function dumpDebug($endpoint, $data=null)
-{
-if (!$this->debug)
-	return;
-
-printf("API Endpoint: %s\nData:\n", $endpoint);
-print_r($data);
-}
-
 protected function handleStatus($status, $error, $response)
 {
 switch ($status) {
@@ -148,9 +139,8 @@ if (is_array($query))
 $curl=$this->getcurl($url);
 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'GET');
 
-$this->dumpDebug($url);
-
-// print_r($url);die();
+if ($this->debug)
+	slog('GET', $url);
 
 $response=curl_exec($curl);
 $status=curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -168,7 +158,8 @@ $url=$this->url.'/'.$endpoint;
 $curl=$this->getcurl($url);
 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'DELETE');
 
-$this->dumpDebug($endpoint);
+if ($this->debug)
+	slog('DELETE', $url);
 
 $response=curl_exec($curl);
 $status=curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -188,7 +179,8 @@ $curl=$this->getcurl($url);
 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
 curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 
-$this->dumpDebug($endpoint, $data);
+if ($this->debug)
+	slog('POST', json_encode($url, $data));
 
 $response=curl_exec($curl);
 $status=curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -208,7 +200,8 @@ $curl=$this->getcurl($url);
 curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PUT');
 curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 
-$this->dumpDebug($endpoint, $data);
+if ($this->debug)
+	slog('PUT', json_encode($url, $data));
 
 $response=curl_exec($curl);
 $status=curl_getinfo($curl, CURLINFO_HTTP_CODE);

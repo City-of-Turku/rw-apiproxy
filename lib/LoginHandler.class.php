@@ -21,36 +21,37 @@ $this->be=$be;
 $this->appdata=$app;
 $h=getallheaders();
 
-if (!$this->checkAuthenticationKey($h))
-	return;
+// Check client API key, if it's not ok, then we report that directly and die
+if (!$this->checkAuthenticationKey($h)) {
+	Flight::json(Response::data(500, 'Client authentication error, invalid client API key', 'login'), 500);
+	die(); // Fatal error
+}
 
+// Check if we are given a login token, if not then client *user* is not yet logged in, not fatal and default 
 if (empty($h['X-Auth-Token'])) {
 	slog("X-Auth-Token is empty");
 	return;
 }
 
-$this->be->set_auth_token($h['X-Auth-Token']);
 try {
+	$this->be->set_auth_token($h['X-Auth-Token']);
 	$this->isAuth=$this->be->check_auth();
 } catch (Exception $e) {
 	Flight::json(Response::data(500, 'Internal authentication failure', 'login', array('error'=>$e->getMessage())), 500);
+	die(); // Fatal error, we need to die here as if auth fails, user shouldn't be allowed to do anything
 }
 }
 
 private function checkAuthenticationKey(array $h)
 {
-// XXX: Check against authorized client keys
-if (empty($h['X-AuthenticationKey'])) {
-	slog("Client with empty application key");
+if (empty($h['X-AuthenticationKey']))
 	return false;
-}
 
 $r=$this->be->auth_apikey($h['X-AuthenticationKey']);
 if ($r) {
 	$this->isClientAuth=true;
 	return true;
 }
-slog("Client with invalid application key");
 $this->isClientAuth=false;
 $this->isAuth=false;
 return false;

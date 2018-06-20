@@ -19,6 +19,10 @@ private $map;
 
 private $aes;
 
+private $dsn;
+private $dbuser;
+private $dbpass;
+
 public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
@@ -26,6 +30,10 @@ $this->umap=array();
 $this->umapr=array();
 
 $this->aes=new AES($config['key'], $config['hmac_key']);
+
+$this->dsn=$config['apikey_dsn'];
+$this->dbuser=$config['apikey_user'];
+$this->dbpass=$config['apikey_password'];
 
 if (isset($config['debug']) && $config['debug'])
 	$this->d->set_debug(true);
@@ -235,8 +243,30 @@ return $this->d->logout();
 
 public function auth_apikey($key)
 {
-// XXX: Add drupal backend client key check
-return true;
+try {
+    $dbh=new PDO($this->dsn, $this->dbuser, $this->dbpass);
+    $stmt=$dbh->prepare('SELECT count(*) AS c FROM apikeys WHERE apikey=? AND revoked=0');
+    $stmt->bindParam(1, $key);
+    $r=$stmt->execute();
+    if (!$r) {
+        slog('Failed to query API key database');
+	return false;
+    }
+
+    $row=$stmt->fetch();
+
+    // Close connection
+    $stmt=null;
+    $dbh=null;
+
+    if ($row['c']===1)
+	return true;
+} catch (PDOException $e) {
+    slog('API Key database failure',false,$e);
+    return false;
+}
+
+return false;
 }
 
 // Locations

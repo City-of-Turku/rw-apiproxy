@@ -39,6 +39,29 @@ Uses the Prestashop API and requires direct access to the prestashop database.
 Make a copy of config.ini.sample to config.ini and modify service endpoints, set any required API keys
 and choose a backend to use. See config.ini.sample for details.
 
+## Client keys
+A client application must have a API key to indentify it. This key is a random string and must be provided in the http request
+header 'xxx' and must be sent with every request.
+
+### Client keys configuration
+
+Key configuration is backend service specific. 
+
+### Prestashop
+
+Uses Supplier or Manufacturer for apikey. (XXX: This needs more information)
+
+### Drupal
+
+API keys are checked from a simple database, that does not need to be part of any Drupal install, the minimum table field format below:
+
+ CREATE TABLE apikeys (
+  apikey varchar(64) primary key,
+  revoked int not null default 0
+ );
+
+Database connection details are set in config.ini, see config.ini.sample for example settings.
+
 ## Responses
 All response bodies are in JSON format. 
 HTTP error codes are used to report success and failure.

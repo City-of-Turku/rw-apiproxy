@@ -180,7 +180,7 @@ curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
 curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 
 if ($this->debug)
-	slog('POST', json_encode($url, $data));
+	slog('POST', array($url, $data));
 
 $response=curl_exec($curl);
 $status=curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -201,7 +201,7 @@ curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PUT');
 curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
 
 if ($this->debug)
-	slog('PUT', json_encode($url, $data));
+	slog('PUT', array($url, $data));
 
 $response=curl_exec($curl);
 $status=curl_getinfo($curl, CURLINFO_HTTP_CODE);

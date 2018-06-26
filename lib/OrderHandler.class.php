@@ -13,23 +13,22 @@ $this->l=$l;
 $this->be=$be;
 }
 
-public Function orders()
+public Function orders($page=1, $limit=10)
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'));
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'orders'));
 
 $r=Flight::request()->query;
 $ip=$page===false ? (int)$r['page'] : $page;
 $a=$limit===false ? (int)$r['amount'] : $limit;
 
 if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
-        return Flight::json(Response::data(500, 'Invalid page or amount', 'products'));
+        return Flight::json(Response::data(500, 'Invalid page or amount', 'orders'));
 }
 
 $ps=array();
 try {
-	$data=$this->be->index_orders($ip, $a, filter);
-	// XXX: Re-format
+	$data=$this->be->index_orders($ip, $a);
 	foreach ($data as $oid => $po) {
 		$ps[$oid]=$po;
 	}

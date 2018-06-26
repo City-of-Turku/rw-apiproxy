@@ -421,6 +421,10 @@ if (property_exists($po, "field_purpose")) {
 return $p;
 }
 
+/**
+ * Products
+ */
+
 public function index_products($page=0, $pagesize=20, array $filter=null, array $sortby=null)
 {
 $data=$this->d->index_products($page, $pagesize, null, $filter, $sortby);
@@ -439,6 +443,34 @@ return $this->d->get_product($id);
 public function get_product_by_sku($sku)
 {
 return $this->d->get_product_by_sku($sku);
+}
+
+/**
+ * Orders
+ */
+
+protected function drupalJSONtoOrder(stdClass $o)
+{
+$p=array();
+
+$p['status']=$o->status;
+$p['created']=$o->created;
+$p['changed']=$o->changed;
+$p['placed']=$o->placed;
+$p['amount']=$o->commerce_order_total->amount;
+$p['currency']=$o->commerce_order_total->currency_code;
+
+return $p;
+}
+
+public function index_orders($page=0, $pagesize=20, array $filter=null, array $sortby=null)
+{
+$data=$this->d->index_orders($page, $pagesize, null, $filter, $sortby);
+$ps=array();
+foreach ($data as $o) {
+	$ps[$o->order_id]=$this->drupalJSONtoOrder($o);
+}
+return $ps;
 }
 
 /**

@@ -122,9 +122,8 @@ Flight::map('error', function($e) {
   $c=$e->getCode();
   if ($c<400)
     $c=500;
-  $m=$e->getMessage().' '.$e->getLine();
-  slog("Generic error: ".$m, $e);
-  Flight::json(Response::data($c, $m, 'error'), 500);
+  slog("Internal error", $e->getMessage(), $e);
+  Flight::json(Response::data($c, "Internal system error", 'error'), 500);
 });
 
 Flight::start();

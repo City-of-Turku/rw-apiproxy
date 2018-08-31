@@ -24,7 +24,7 @@ $r=array();
 foreach ($tmp as $loc) {
 	if (property_exists($loc, 'geo')) {
 		$g=json_decode($loc->geo);
-		if (property_exists($g, 'coordinates'))
+		if (is_object($g) && property_exists($g, 'coordinates'))
 			$loc->geo=$g->coordinates;
 		else
 			$loc->geo=null;

@@ -35,9 +35,22 @@ abstract public function index_products();
 abstract public function get_product($id);
 abstract public function get_product_by_sku($sku);
 
+/**
+ * validate Description field, for now only strips any tags from it.
+ *
+ */
 protected Function validateDescription($desc)
 {
 return strip_tags($desc);
+}
+
+/**
+ * Validate against a regexp
+ *
+ */
+public Function validateReg($str, $reg)
+{
+return preg_match($reg, $str)===1 ? $bc : false;
 }
 
 /**

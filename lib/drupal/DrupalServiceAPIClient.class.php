@@ -456,7 +456,7 @@ return $data;
 public function index_products($page=0, $pagesize=20, array $fields=null, array $filter=null, array $sortby=null)
 {
 $param=array(
-	'limits'=>(int)$pagesize,
+	'limit'=>(int)$pagesize,
 	'offset'=>(int)($page-1)*$pagesize
 );
 if (is_array($fields))
@@ -550,7 +550,7 @@ return true;
 public function index_orders($page=0, $pagesize=20, array $fields=null, array $filter=null)
 {
 $param=array(
-	'limits'=>(int)$pagesize,
+	'limit'=>(int)$pagesize,
 	'offset'=>(int)($page-1)*$pagesize
 );
 if (is_array($fields))

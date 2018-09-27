@@ -87,7 +87,7 @@ $this->map=array(
 	),
  'field_purpose'=>array(
 	'id'=>'purpose',
-	'required'=>true,
+	'required'=>false,
 	'type'=>'int',
 	'cb_map'=>'purposeMap',
 	'cb_map_r'=>'purposeMapReverse'
@@ -139,7 +139,7 @@ private Function purposeMap($u)
 {
 if (array_key_exists($u, $this->umap))
         return $this->umap[$u];
-slog('Purpose not found in map', json_encode($u));
+slog('Purpose taxonomy not found in map', json_encode($u));
 return false;
 }
 
@@ -147,7 +147,7 @@ private Function purposeMapReverse($u)
 {
 if (array_key_exists($u, $this->umapr))
         return $this->umapr[$u];
-slog('Purpose id not found in reverse map', json_encode($u));
+slog('Purpose taxonomy id not found in reverse map', json_encode($u));
 return 0;
 }
 
@@ -302,7 +302,9 @@ for ($i=0;$i<$c;$i++) {
                 $errors[]=$images['name'][$i];
                 continue;
         }
-        $fids[]=$this->upload_file($images['tmp_name'][$i], $images['name'][$i]);
+	$ur=$this->upload_file($images['tmp_name'][$i], $images['name'][$i]);
+	slog('Uploaded', $ur);
+	$fids[]=$ur->fid;
 }
 return $fids;
 }
@@ -317,7 +319,7 @@ $f=$this->mapRequest($data, $er);
 if (count($er)>0) {
         $data=array('errors'=>$er);
         $data['f']=$f;
-        slog('Invalid product data', json_encode($er));
+        slog('Invalid drupal product data', json_encode($er));
 	throw new Exception('Invalid product data', 400);
 }
 
@@ -329,18 +331,22 @@ if (count($files)>0) {
                 $images[]=array('fid'=>$fid);
         }
         $f['field_image']=$images;
+} else {
+        slog('No images given for product');
+	throw new Exception('Product image(s) are required', 400);
 }
 
+// xxx
 $price=0;
 $r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
-slog('Product added', $f['sku']);
+slog('Product added', $f);
 return true;
 }
 
 // Products
-public function create_product($type, $sku, $title, $price)
+public function create_product($type, $sku, $title, $price, array $f)
 {
-return $this->d->create_product($type, $sku, $title, $price);
+return $this->d->create_product($type, $sku, $title, $price, $f);
 }
 
 protected Function setProductImages(array $images, $style)
@@ -453,10 +459,15 @@ protected function drupalJSONtoOrder(stdClass $o)
 {
 $p=array();
 
+slog('Order data', $o);
+
+// XXX: Translate to something "common"
 $p['status']=$o->status;
+
 $p['created']=$o->created;
 $p['changed']=$o->changed;
 $p['placed']=$o->placed;
+
 $p['amount']=$o->commerce_order_total->amount;
 $p['currency']=$o->commerce_order_total->currency_code;
 
@@ -468,6 +479,10 @@ public function index_orders($page=0, $pagesize=20, array $filter=null, array $s
 $data=$this->d->index_orders($page, $pagesize, null, $filter, $sortby);
 $ps=array();
 foreach ($data as $o) {
+	// This orders are carts until submitted, this interface leaks the carts so skip carts
+	// XXX: Handle other carts status type too
+	if ($o->status=='cart')
+		continue;
 	$ps[$o->order_id]=$this->drupalJSONtoOrder($o);
 }
 return $ps;
@@ -475,6 +490,8 @@ return $ps;
 
 /**
  * mapVariable
+ *
+ *
  */
 protected Function mapVariable(array &$r, $id, $df, array &$o, array &$er)
 {
@@ -503,9 +520,9 @@ if ($o['required']===false && !isset($r[$id]) && isset($o['default'])) {
 $type=$o['type'];
 switch ($type) {
 	case 'string':
-		$v=trim($v);
 		if (!is_string($v))
 			$er[$id]='Invalid contents, not a string: '.$v;
+		$v=trim($v);
 		if (isset($o['cb_map'])) {
 			$v=call_user_func(array($this, $o['cb_map']), $v);
 			if ($v===false) {
@@ -519,6 +536,9 @@ switch ($type) {
 				$er[$id]='Invalid value given, did not validate';
 				return false;
 			}
+		}
+		if (isset($o['regexp_validate'])) {
+			// XXX Implement
 		}
 	break;
 	case 'int':
@@ -545,9 +565,11 @@ switch ($type) {
 		}
 	break;
 	case 'nodeid':
-		if (!is_numeric($v) || $v<1)
-			$er[$id]='Invalid node reference ID';
+		if (!is_numeric($v))
+			$er[$id]='Node reference must be a number.';
 		$v=(int)$v;
+		if ($v<1)
+			$er[$id]='Node reference must be positive.';
 	break;
 	default:
 		$er[$id]='Unknown type. Invalid contents';
@@ -582,7 +604,7 @@ foreach ($this->map as $df => $o) {
 			$f[$df]=$v;
 	} else {
 		// 1:1
-		$v=$this->mapVariable($id, $df, $o, $er);
+		$v=$this->mapVariable($r, $id, $df, $o, $er);
 		if ($v===false || $v===true) // Skip or Error case, lets just collection any more errors
 			continue;
 		if (isset($o['field_id'])) {

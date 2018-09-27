@@ -198,7 +198,7 @@ $i->image_styles=$s;
 return $i;
 }
 
-public function add_product($data, array $files)
+public function add_product(array $data, array $files)
 {
 $p=new Product();
 $p->sku=array($data['barcode']);

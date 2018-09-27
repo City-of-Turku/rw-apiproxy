@@ -1,6 +1,6 @@
 <?php
-
-function slog($er, $data='', Exception $e=null)
+// XXX We would like to have Throwable/Exception $e but we need to be PHP 5 compatible so for now...
+function slog($er, $data='', $e=null)
 {
 openlog("rvapi", LOG_PID, LOG_LOCAL0);
 if (!is_string($data))

@@ -29,7 +29,8 @@ abstract public function upload_file($file, $filename=null);
 abstract public function view_file($fid, $data=false);
 
 // Products
-abstract public function create_product($type, $sku, $title, $price);
+abstract public function add_product(array $data, array $files);
+// abstract public function create_product($type, $sku, $title, $price);
 abstract public function index_products();
 
 abstract public function get_product($id);

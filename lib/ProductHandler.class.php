@@ -393,7 +393,7 @@ $fer='';
 
 try {
 	$rf=Flight::request()->files;
-	$r=$this->api->add_product(Flight::request()->data, $rf['images'], $fer);
+	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
 	return Flight::json(Response::data(201, 'Product add', 'product', array("response"=>$r, "file_errors"=>$fer)), 201);
 } catch (Exception $e) {
 	// XXX: Handle errors properly

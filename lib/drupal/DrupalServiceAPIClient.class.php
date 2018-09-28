@@ -215,19 +215,20 @@ return $response;
 
 protected function insert_fields(array &$param, array $fields=null)
 {
-if (is_array($fields))
-	$param['fields']=implode(',', $fields);
+if (!is_array($fields))
+	return;
+$param['fields']=implode(',', $fields);
 }
 
 protected function insert_filters(array &$param, array $filter=null)
 {
-if (is_array($filter)) {
-	foreach ($filter as $f=>$q) {
-		$k=sprintf('filter[%s]', $f);
-		$param[$k]=is_array($q) ? $q[0] : $q;
-		$k=sprintf('filter_op[%s]', $f);
-		$param[$k]=is_array($q) ? $q[1] : 'CONTAINS';
-	}
+if (!is_array($filter))
+	return;
+foreach ($filter as $f=>$q) {
+	$k=sprintf('filter[%s]', $f);
+	$param[$k]=is_array($q) ? $q[0] : $q;
+	$k=sprintf('filter_op[%s]', $f);
+	$param[$k]=is_array($q) ? $q[1] : 'CONTAINS';
 }
 }
 

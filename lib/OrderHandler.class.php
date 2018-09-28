@@ -13,7 +13,7 @@ $this->l=$l;
 $this->be=$be;
 }
 
-public Function orders($page=1, $limit=10)
+public Function orders($page=1, $limit=10, $otype='pending', $uid=null)
 {
 if (!$this->l->isAuthenticated())
 	return Flight::json(Response::data(401, 'Client is not authenticated', 'orders'));
@@ -23,17 +23,33 @@ $ip=$page===false ? (int)$r['page'] : $page;
 $a=$limit===false ? (int)$r['amount'] : $limit;
 
 if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
-        return Flight::json(Response::data(500, 'Invalid page or amount', 'orders'));
+	return Flight::json(Response::data(500, 'Invalid page or amount', 'orders'));
 }
 
 $ps=array();
+switch ($otype) {
+	case 'all':
+		$fr=null;
+	break;
+	case 'cart':
+		$fr=array('status'=>'cart');
+	break;
+	case 'pending':
+		$fr=array('status'=>'pending');
+	break;
+	case 'completed':
+		$fr=array('status'=>'completed');
+	break;
+	default:
+		$fr=null;
+}
+$sortby['created']='desc';
 try {
-	$data=$this->be->index_orders($ip, $a);
-	foreach ($data as $oid => $po) {
-		$ps[$oid]=$po;
-	}
+	$ps=$this->be->index_orders($ip, $a, $fr, $sortby);
+	slog('Order', $ps);
 } catch (Exception $e) {
 	Flight::json(Response::data(500, 'Order data load failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	slog('OrderFail', '', $e);
 	return false;
 }
 

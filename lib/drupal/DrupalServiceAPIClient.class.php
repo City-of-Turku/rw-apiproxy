@@ -213,6 +213,24 @@ $this->handleStatus($status, $error, $response);
 return $response;
 }
 
+protected function insert_fields(array &$param, array $fields=null)
+{
+if (is_array($fields))
+	$param['fields']=implode(',', $fields);
+}
+
+protected function insert_filters(array &$param, array $filter=null)
+{
+if (is_array($filter)) {
+	foreach ($filter as $f=>$q) {
+		$k=sprintf('filter[%s]', $f);
+		$param[$k]=is_array($q) ? $q[0] : $q;
+		$k=sprintf('filter_op[%s]', $f);
+		$param[$k]=is_array($q) ? $q[1] : 'CONTAINS';
+	}
+}
+}
+
 /*******************************************************************
  * User
  *******************************************************************/
@@ -459,18 +477,9 @@ $param=array(
 	'limit'=>(int)$pagesize,
 	'offset'=>(int)($page-1)*$pagesize
 );
-if (is_array($fields))
-	$param['fields']=implode(',', $fields);
-//if (is_array($params))
-//	$param['parameters']=$params;
-if (is_array($filter)) {
-	foreach ($filter as $f=>$q) {
-		$k=sprintf('filter[%s]', $f);
-		$param[$k]=is_array($q) ? $q[0] : $q;
-		$k=sprintf('filter_op[%s]', $f);
-		$param[$k]=is_array($q) ? $q[1] : 'CONTAINS';
-	}
-}
+
+$this->insert_fields($param, $fields);
+$this->insert_filters($param, $filter);
 
 if (is_array($sortby)) {
 	$sb=array();
@@ -553,16 +562,9 @@ $param=array(
 	'limit'=>(int)$pagesize,
 	'offset'=>(int)($page-1)*$pagesize
 );
-if (is_array($fields))
-	$param['fields']=implode(',', $fields);
-if (is_array($filter)) {
-	foreach ($filter as $f=>$q) {
-		$k=sprintf('filter[%s]', $f);
-		$param[$k]=is_array($q) ? $q[0] : $q;
-		$k=sprintf('filter_op[%s]', $f);
-		$param[$k]=is_array($q) ? $q[1] : 'CONTAINS';
-	}
-}
+
+$this->insert_fields($param, $fields);
+$this->insert_filters($param, $filter);
 
 $r=$this->executeGET('order.json', $param);
 return json_decode($r);

@@ -231,6 +231,20 @@ if (is_array($filter)) {
 }
 }
 
+protected function insert_sortby(array &$param, array $sortby=null)
+{
+if (!is_array($sortby))
+	return;
+$sb=array();
+$sm=array();
+foreach ($sortby as $f => $o) {
+	$sb[]=$f;
+	$sm[]=$o;
+}
+$param['sort_by']=implode(',', $sb);
+$param['sort_order']=implode(',', $sm);
+}
+
 /*******************************************************************
  * User
  *******************************************************************/
@@ -480,17 +494,7 @@ $param=array(
 
 $this->insert_fields($param, $fields);
 $this->insert_filters($param, $filter);
-
-if (is_array($sortby)) {
-	$sb=array();
-	$sm=array();
-	foreach ($sortby as $f => $o) {
-		$sb[]=$f;
-		$sm[]=$o;
-	}
-	$param['sort_by']=implode(',', $sb);
-	$param['sort_order']=implode(',', $sm);
-}
+$this->insert_sortby($param, $sortby);
 
 $r=$this->executeGET('product.json', $param);
 return json_decode($r);
@@ -556,7 +560,7 @@ return true;
  * Commerce Product Order
  ******************************************************************/
 
-public function index_orders($page=0, $pagesize=20, array $fields=null, array $filter=null)
+public function index_orders($page=0, $pagesize=20, array $fields=null, array $filter=null, array $sortby=null)
 {
 $param=array(
 	'limit'=>(int)$pagesize,
@@ -565,6 +569,7 @@ $param=array(
 
 $this->insert_fields($param, $fields);
 $this->insert_filters($param, $filter);
+$this->insert_sortby($param, $sortby);
 
 $r=$this->executeGET('order.json', $param);
 return json_decode($r);

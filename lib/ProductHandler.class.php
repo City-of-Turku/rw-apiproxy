@@ -125,7 +125,7 @@ public Function getProductImage($style, $fid)
 $style=filter_var($style, FILTER_SANITIZE_STRING);
 $fid=filter_var($fid, FILTER_VALIDATE_INT);
 
-slog('Image requested: '.$style.$fid);
+slog('Image requested', array($style, $fid));
 
 // We allow anonymous retrieval of product images, client must still be authenticated with client key
 if (!$this->l->isClientAuthenticated())

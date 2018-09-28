@@ -454,7 +454,6 @@ return $this->d->get_product_by_sku($sku);
 /**
  * Orders
  */
-
 protected function drupalJSONtoOrder(stdClass $o)
 {
 $p=array();
@@ -463,13 +462,36 @@ slog('Order data', $o);
 
 // XXX: Translate to something "common"
 $p['status']=$o->status;
+$p['user']=$o->uid;
 
 $p['created']=$o->created;
 $p['changed']=$o->changed;
-$p['placed']=$o->placed;
 
 $p['amount']=$o->commerce_order_total->amount;
 $p['currency']=$o->commerce_order_total->currency_code;
+
+$billing_id=$o->commerce_customer_billing;
+$shipping_id=$o->commerce_customer_shipping;
+
+if (property_exists($o, "commerce_line_items_entities")) {
+	$oi=array();
+	foreach ($o->commerce_line_items_entities as $id=>$pr) {
+		$oi['barcode']=$pr->line_item_label;
+		$oi['title']=$pr->line_item_title;
+		$oi['amount']=(int)$pr->quantity;
+	}
+	$p['items']=$oi;
+}
+
+if (property_exists($o, "commerce_customer_billing_entities") && !is_null($billing_id)) {
+	$e=$o->commerce_customer_billing_entities->$billing_id;
+	$p['billing']=$e;
+}
+
+if (property_exists($o, "commerce_customer_shipping_entities") && !is_null($shipping_id)) {
+	$e=$o->commerce_customer_shipping_entities->$shipping_id;
+	$p['shipping']=$e;
+}
 
 return $p;
 }
@@ -478,12 +500,8 @@ public function index_orders($page=0, $pagesize=20, array $filter=null, array $s
 {
 $data=$this->d->index_orders($page, $pagesize, null, $filter, $sortby);
 $ps=array();
-foreach ($data as $o) {
-	// This orders are carts until submitted, this interface leaks the carts so skip carts
-	// XXX: Handle other carts status type too
-	if ($o->status=='cart')
-		continue;
-	$ps[$o->order_id]=$this->drupalJSONtoOrder($o);
+foreach ($data as $id=>$o) {
+	$ps[$id]=$this->drupalJSONtoOrder($o);
 }
 return $ps;
 }

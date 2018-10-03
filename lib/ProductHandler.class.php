@@ -236,7 +236,8 @@ $r=Flight::request()->query;
 $ip=$page===false ? (int)$r['page'] : $page;
 $a=$limit===false ? (int)$r['amount'] : $limit;
 
-if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
+if ($ip<1 || $ip>5000 || $a<1 || $a>100) {
+	slog('Invalid paging', array($ip, $a));
 	return Flight::json(Response::data(500, 'Invalid page or amount', 'products'), 500);
 }
 

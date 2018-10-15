@@ -1,27 +1,26 @@
 # RW-API Proxy
 
-API request proxy to various shop backend services.
+API request proxy to various shop backend services, currently supports Drupal 7 Commerce and Prestashop.
 
 License: GPLv3
-
-Not yet fully stable. Documentation is work-in-progress.
+Status: Not yet fully stable. Documentation is still work-in-progress.
 
 The purpose of the API proxy is it remove the need for the client application to know any backend
-specific details so that the backend can be changed to some other system or service without
+specific API details so that the backend can be changed to some other system or service without
 changes to the client software itself. 
 
 Supports:
-* Drupal Commerce
+* Drupal 7 Commerce
 * Prestashop
 
 This is to be used together with the rw-client application, also available on github at:
-* https://github.com/DigiTurku/rw-client
+* https://github.com/City-of-Turku/rw-client
 
 ## Requirements
 
 * PHP 5.4 or greater.
 
-The proxy in itself is self-contained and does not depend on any Drupal or other external code.
+The proxy is self-contained and does not depend on any Drupal or other external code.
 
 ## Supported backends
 
@@ -33,7 +32,7 @@ the following modules installed and setup (and their dependencies):
 * commerce_services
 
 ### Prestashop, trough REST API
-Uses the Prestashop API and requires direct access to the prestashop database.
+Uses the Prestashop API and because of API limitations also requires direct access to the prestashop database.
 
 ## Configuration
 Make a copy of config.ini.sample to config.ini and modify service endpoints, set any required API keys

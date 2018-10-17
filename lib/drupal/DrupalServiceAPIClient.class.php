@@ -119,11 +119,15 @@ switch ($status) {
 		throw new DrupalServiceException('CURL Error: '.$error, $status);
 	case 200:
 		return true;
+	case 400:
+		throw new DrupalServiceException('Bad request', $status);
 	case 403:
 	case 401:
 		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
 	case 404:
 		throw new DrupalServiceException('Not found', $status);
+	case 500:
+		throw new DrupalServiceException('Internal error', $status);
 	default:
 		throw new DrupalServiceException($response, $status);
 }

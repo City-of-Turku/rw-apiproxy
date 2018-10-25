@@ -436,7 +436,8 @@ public function index_products($page=0, $pagesize=20, array $filter=null, array 
 $data=$this->d->index_products($page, $pagesize, null, $filter, $sortby);
 $ps=array();
 foreach ($data as $po) {
-	$ps[$po->sku]=$this->drupalJSONtoProduct($po);
+	// Note: Don't use any index as otherwise sorting won't work
+	$ps[]=$this->drupalJSONtoProduct($po);
 }
 return $ps;
 }
@@ -454,13 +455,12 @@ return $this->d->get_product_by_sku($sku);
 /**
  * Orders
  */
-protected function drupalJSONtoOrder(stdClass $o)
+protected function drupalJSONtoOrder($id, stdClass $o)
 {
 $p=array();
 
-slog('Order data', $o);
-
 // XXX: Translate to something "common"
+$p['id']=$id;
 $p['status']=$o->status;
 $p['user']=$o->uid;
 
@@ -474,13 +474,16 @@ $billing_id=$o->commerce_customer_billing;
 $shipping_id=$o->commerce_customer_shipping;
 
 if (property_exists($o, "commerce_line_items_entities")) {
-	$oi=array();
+	$ois=array();
 	foreach ($o->commerce_line_items_entities as $id=>$pr) {
-		$oi['barcode']=$pr->line_item_label;
+		$oi=array();
+		$oi['sku']=$pr->line_item_label;
 		$oi['title']=$pr->line_item_title;
 		$oi['amount']=(int)$pr->quantity;
+
+		$ois[]=$oi;
 	}
-	$p['items']=$oi;
+	$p['items']=$ois;
 }
 
 if (property_exists($o, "commerce_customer_billing_entities") && !is_null($billing_id)) {
@@ -496,12 +499,20 @@ if (property_exists($o, "commerce_customer_shipping_entities") && !is_null($ship
 return $p;
 }
 
+protected function drupalAddressFieldToArray(array $a)
+{
+$r=array();
+
+return $r;
+}
+
 public function index_orders($page=0, $pagesize=20, array $filter=null, array $sortby=null)
 {
 $data=$this->d->index_orders($page, $pagesize, null, $filter, $sortby);
 $ps=array();
 foreach ($data as $id=>$o) {
-	$ps[$id]=$this->drupalJSONtoOrder($o);
+	// Note: Don't use any index as otherwise sorting won't work anymore.
+	$ps[]=$this->drupalJSONtoOrder($id, $o);
 }
 return $ps;
 }

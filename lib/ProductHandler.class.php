@@ -12,7 +12,7 @@ private $cmap;
 private $umap;
 private $umapr;
 private $catmap;
-private $validSort=array('title','sku','date');
+private $validSort=array('title_desc','title_asc','date_asc','date_desc','sku','price_asc','price_desc');
 
 public function __construct(LoginHandler &$l, BackendActionsInterface &$be)
 {
@@ -189,6 +189,7 @@ $r=Flight::request()->query;
 $filter=array(
 	'commerce_stock'=>array(0, '>')
 );
+$req=new Request($r);
 
 if (isset($r['q']))
 	$filter['title']=filter_var(trim($r['q']), FILTER_SANITIZE_STRING);
@@ -202,19 +203,26 @@ if (isset($r['category'])) {
 	$filter['type']=$t;
 }
 
-$sortby=array();
-if (isset($r['o'])) {
- $o=$r['o'];
- switch ($o) {
-  case 'sku':
-  case 'title':
-  case 'created':
-   $sortby=array();
-  break;
-  default:
- }
-} else {
- $sortby['created']='desc';
+$sb=$req->getStr('s', 'date_asc');
+
+switch ($sb) {
+	case 'sku':
+	$sortby=array('sku'=>'asc');
+	break;
+	case 'title_asc':
+	$sortby=array('title'=>'asc');
+	break;
+	case 'title_desc':
+	$sortby=array('title'=>'desc');
+	reak;
+	case 'date_asc':
+	$sortby=array('created'=>'asc');
+	break;
+	case 'date_desc':
+	$sortby=array('created'=>'desc');
+	break;
+	default:
+		return Flight::json(Response::data(500, 'Invalid sorting', 'browse'), 500);
 }
 
 $this->browseProducts(false, false, $filter, $sortby);

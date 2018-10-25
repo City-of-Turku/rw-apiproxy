@@ -23,6 +23,7 @@ require('vendor/autoload.php');
 require_once('lib/AES.class.php');
 require('lib/Syslog.php');
 require('lib/Product.class.php');
+require('lib/Request.class.php');
 require('lib/BackendActionsInterface.class.php');
 
 // Drupal backend API
@@ -106,6 +107,8 @@ Flight::route('GET /download/@apk', array($app, 'download'));
 
 // Orders
 Flight::route('GET /orders', array($order, 'orders'));
+//Flight::route('GET /orders/@status', array($order, 'orders'));
+Flight::route('GET /order/@order', array($order, 'order'));
 Flight::route('POST /orders', array($order, 'create'));
 
 // Storage locations list endpoint

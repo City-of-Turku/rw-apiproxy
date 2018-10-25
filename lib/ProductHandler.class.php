@@ -203,7 +203,7 @@ if (isset($r['category'])) {
 	$filter['type']=$t;
 }
 
-$sb=$req->getStr('s', 'date_asc');
+$sb=$req->getStrValidate('s', $this->validSort, 'date_desc', false);
 
 switch ($sb) {
 	case 'sku':
@@ -214,7 +214,7 @@ switch ($sb) {
 	break;
 	case 'title_desc':
 	$sortby=array('title'=>'desc');
-	reak;
+	break;
 	case 'date_asc':
 	$sortby=array('created'=>'asc');
 	break;

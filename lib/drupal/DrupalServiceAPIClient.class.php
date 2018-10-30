@@ -250,6 +250,11 @@ $param['sort_by']=implode(',', $sb);
 $param['sort_order']=implode(',', $sm);
 }
 
+protected function page_param($page, $pagesize)
+{
+return array('page'=>(int)$page, 'pagesize'=>(int)$pagesize);
+}
+
 /*******************************************************************
  * User
  *******************************************************************/
@@ -372,10 +377,7 @@ return json_decode($r);
 // get files list
 public function index_files($page=0, $pagesize=20)
 {
-$p=array(
-	'page'=>(int)$page,
-	'pagesize'=>(int)$pagesize
-);
+$param=$this->page_param($page, $pagesize);
 $r=$this->executeGET('file.json');
 return json_decode($r);
 }
@@ -436,10 +438,7 @@ return json_decode($r);
 
 public function index_nodes($page=0, $pagesize=20, array $fields=null, array $params=null)
 {
-$param=array(
-	'page'=>$page,
-	'pagesize'=>$pagesize
-);
+$param=$this->page_param($page, $pagesize);
 if (is_array($fields))
 	$param['fields']=$fields;
 if (is_array($params))

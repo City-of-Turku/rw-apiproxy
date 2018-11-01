@@ -561,6 +561,22 @@ return true;
 }
 
 /******************************************************************
+ * Commerce Cart
+ ******************************************************************/
+
+public function index_cart()
+{
+$r=$this->executeGET('cart.json');
+return json_decode($r);
+}
+
+public function create_cart()
+{
+$r=$this->executePOST('cart.json');
+return json_decode($r);
+}
+
+/******************************************************************
  * Commerce Product Order
  ******************************************************************/
 

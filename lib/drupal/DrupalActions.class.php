@@ -516,6 +516,8 @@ public function index_orders($page=0, $pagesize=20, array $filter=null, array $s
 {
 $data=$this->d->index_orders($page, $pagesize, null, $filter, $sortby);
 $ps=array();
+if (!$data)
+	return $ps;
 foreach ($data as $id=>$o) {
 	// Note: Don't use any index as otherwise sorting won't work anymore.
 	$ps[]=$this->drupalJSONtoOrder($id, $o);

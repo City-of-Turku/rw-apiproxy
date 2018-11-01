@@ -452,6 +452,18 @@ public function get_product_by_sku($sku)
 return $this->d->get_product_by_sku($sku);
 }
 
+protected function lineItemToOrderItem(stdClass $o)
+{
+$oi=array();
+$oi['id']=(int)$pr->line_item_id;
+$oi['sku']=$pr->line_item_label;
+$oi['title']=$pr->line_item_title;
+$oi['type']=$pr->type;
+$oi['amount']=(int)$pr->quantity;
+
+return $oi;
+}
+
 /**
  * Orders
  */
@@ -460,14 +472,14 @@ protected function drupalJSONtoOrder($id, stdClass $o)
 $p=array();
 
 // XXX: Translate to something "common"
-$p['id']=$id;
+$p['id']=(int)$id;
 $p['status']=$o->status;
-$p['user']=$o->uid;
+$p['user']=(int)$o->uid;
 
-$p['created']=$o->created;
-$p['changed']=$o->changed;
+$p['created']=(int)$o->created;
+$p['changed']=(int)$o->changed;
 
-$p['amount']=$o->commerce_order_total->amount;
+$p['amount']=(int)$o->commerce_order_total->amount;
 $p['currency']=$o->commerce_order_total->currency_code;
 
 $billing_id=$o->commerce_customer_billing;
@@ -475,14 +487,8 @@ $shipping_id=$o->commerce_customer_shipping;
 
 if (property_exists($o, "commerce_line_items_entities")) {
 	$ois=array();
-	foreach ($o->commerce_line_items_entities as $id=>$pr) {
-		$oi=array();
-		$oi['sku']=$pr->line_item_label;
-		$oi['title']=$pr->line_item_title;
-		$oi['amount']=(int)$pr->quantity;
-
-		$ois[]=$oi;
-	}
+	foreach ($o->commerce_line_items_entities as $id=>$pr)
+		$ois[]=$this->lineItemToOrderItem($pr);
 	$p['items']=$ois;
 }
 
@@ -515,6 +521,30 @@ foreach ($data as $id=>$o) {
 	$ps[]=$this->drupalJSONtoOrder($id, $o);
 }
 return $ps;
+}
+
+protected function cart($clear=false)
+{
+if ($clear)
+	$data=$this->d->clear_cart();
+else
+	$data=$this->d->index_cart();
+// Looks like an order list but with just one item, so make sure it is that
+if (is_array($data) && count($data)==1) {
+	$o=array_shift($data);
+	return $this->drupalJSONtoOrder($o->order_number, $o);
+}
+return false;
+}
+
+public function index_cart()
+{
+return $this->cart(false);
+}
+
+public function clear_cart()
+{
+return $this->cart(true);
 }
 
 /**

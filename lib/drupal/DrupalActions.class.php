@@ -452,7 +452,7 @@ public function get_product_by_sku($sku)
 return $this->d->get_product_by_sku($sku);
 }
 
-protected function lineItemToOrderItem(stdClass $o)
+protected function lineItemToOrderItem(stdClass $pr)
 {
 $oi=array();
 $oi['id']=(int)$pr->line_item_id;

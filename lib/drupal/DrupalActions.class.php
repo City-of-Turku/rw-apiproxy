@@ -471,7 +471,6 @@ protected function drupalJSONtoOrder($id, stdClass $o)
 {
 $p=array();
 
-// XXX: Translate to something "common"
 $p['id']=(int)$id;
 $p['status']=$o->status;
 $p['user']=(int)$o->uid;
@@ -482,6 +481,7 @@ $p['changed']=(int)$o->changed;
 $p['amount']=(int)$o->commerce_order_total->amount;
 $p['currency']=$o->commerce_order_total->currency_code;
 
+// Get the ID numbers
 $billing_id=$o->commerce_customer_billing;
 $shipping_id=$o->commerce_customer_shipping;
 
@@ -493,21 +493,46 @@ if (property_exists($o, "commerce_line_items_entities")) {
 }
 
 if (property_exists($o, "commerce_customer_billing_entities") && !is_null($billing_id)) {
-	$e=$o->commerce_customer_billing_entities->$billing_id;
-	$p['billing']=$e;
+	$p['billing']=$this->drupalAddressFieldToArray($o->commerce_customer_billing_entities->$billing_id->commerce_customer_address);
 }
 
 if (property_exists($o, "commerce_customer_shipping_entities") && !is_null($shipping_id)) {
-	$e=$o->commerce_customer_shipping_entities->$shipping_id;
-	$p['shipping']=$e;
+	$p['shipping']=$this->drupalAddressFieldToArray($o->commerce_customer_shipping_entities->$shipping_id->commerce_customer_address);
+}
+
+if (property_exists($o, "field_email")) {
+	$p['email']=$o->field_email;
 }
 
 return $p;
 }
 
-protected function drupalAddressFieldToArray(array $a)
+/* Convert the drupal address format to something more common:
+	{"country":"FI",
+	"administrative_area":"",
+	"sub_administrative_area":null,
+	"locality":"City",
+	"dependent_locality":"",
+	"postal_code":"12345",
+	"thoroughfare":"Street name",
+	"premise":"",
+	"sub_premise":null,
+	"organisation_name":null,
+	"name_line":"Name",
+	"first_name":"Turun",
+	"last_name":"",
+	"data":null}
+*/
+protected function drupalAddressFieldToArray(stdClass $a)
 {
 $r=array();
+
+$r['postal_code']=$a->postal_code;
+$r['address']=$a->thoroughfare;
+$r['name']=$a->name_line;
+$r['city']=$a->locality;
+$r['country']=$a->country;
+$r['org']=$a->organisation_name;
 
 return $r;
 }

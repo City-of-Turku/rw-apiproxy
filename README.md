@@ -106,9 +106,9 @@ Configure encryption keys, you can generate suitable ones with
 
 * /product POST add product
 * /products GET browse product list
-* /products/barcode/@barcode:[A-Z]{3}[0-9]{6,9} GET search product by given barcode string
+* /products/barcode/@barcode:[A-Z]{3}[0-9]{6,9} GET a single product by given barcode string
 * /products/image/@fid:[0-9]{1,5} GET get product image by ID, ID is in the product details
-* /products/search GET search products
+* /products/search GET search for products
 
 ### Locations
 

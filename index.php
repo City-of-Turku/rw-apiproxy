@@ -89,7 +89,7 @@ Flight::route('GET /auth/user', array($l, 'userCurrent'));
 Flight::route('GET /user/@id:[0-9]{1,6}', array($l, 'user'));
 
 // Product related requests
-Flight::route('GET /product/barcode/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'searchBarcode'));
+Flight::route('GET /product/barcode/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'getProduct'));
 Flight::route('GET /product/image/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
 Flight::route('GET /product/latest', array($news, 'productsFeed'));
 Flight::route('GET /products/search', array($p, 'search'));

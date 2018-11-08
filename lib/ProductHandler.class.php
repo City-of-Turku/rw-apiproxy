@@ -90,15 +90,6 @@ for ($i=0;$i<$c;$i++) {
 return $fids;
 }
 
-public Function searchBarcode($barcode)
-{
-if (!$this->api->validateBarcode($barcode))
-	return Flight::json(Response::data(500, 'Invalid barcode', 'searchBarcode'), 500);
-
-$filter=array('sku'=>$barcode);
-return $this->browseProducts(1, 1, $filter);
-}
-
 private Function dumpImageUrl($mime, $url)
 {
 // Cache for 10 minutes, for now.. we might up this as product images won't change afterwards
@@ -264,6 +255,31 @@ if (count($ps)===0 && $page==1 && $limit==1 && is_array($filter))
 
 $data=array('page'=>$ip, 'ramount'=>$a, 'amount'=>count($ps), 'products'=>$ps);
 Flight::json(Response::data(200, 'Products', 'products', $data));
+}
+
+/**
+ * getProduct();
+ *
+ * Load a specific product with barcode
+ *
+ */
+public Function getProduct($barcode)
+{
+if (!$this->api->validateBarcode($barcode)) {
+	Flight::json(Response::data(500, 'Invalid barcode', 'product'), 500);
+	return false;
+}
+
+try {
+	$ps=$this->api->index_products(1, 1, array('sku'=>$barcode));
+} catch (Exception $e) {
+	slog('product', $barcode, $e);
+	Flight::json(Response::data(404, 'Product not found', 'product'), 404);
+	return false;
+}
+
+slog('product', $ps[0]);
+Flight::json(Response::data(200, 'Product', 'product', $ps[0]));
 }
 
 protected Function mapVariable($id, $df, array &$o, array &$er)

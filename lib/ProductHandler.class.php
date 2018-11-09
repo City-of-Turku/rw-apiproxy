@@ -90,7 +90,7 @@ for ($i=0;$i<$c;$i++) {
 return $fids;
 }
 
-private Function dumpImageUrl($mime, $url)
+private Function dumpImageData($mime, $date)
 {
 // Cache for 10 minutes, for now.. we might up this as product images won't change afterwards
 if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
@@ -99,24 +99,50 @@ if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
 		die();
 	}
 }
-// Add local proxy cache for images
-// for now tell client to cache for 24 hours
+// Allow caching on client side
 header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24)));
 header("Content-type: ".$mime);
-
-slog($url);
-
-$data=@file_get_contents($url);
 header("Content-Length: ".strlen($data));
 die($data);
+}
+
+private function get_image($url, array $opts=null)
+{
+$c=null;
+if (is_array($opts)) {
+	$auth=base64_encode($opts['username'].":".$opts['password']);
+	$c=stream_context_create(["http" => ["header" => "Authorization: Basic $auth"]]);
+}
+return @file_get_contents($url, false, $c);
+}
+
+private Function getImageFromCache($key)
+{
+try {
+	$r=new Redis();
+	$r->connect('127.0.0.1', 6379);
+	return $r->get($key);
+} catch (Exception $e) {
+	slog("RedisGetFail", $key, $e);
+}
+return false;
+}
+
+private Function setImageToCache($key, $data)
+{
+try {
+	$r=new Redis();
+	$r->connect('127.0.0.1', 6379);
+	return $r->set($key, $data);
+} catch (Exception $e) {
+	slog("RedisSetFail", $key, $e);
+}
 }
 
 public Function getProductImage($style, $fid)
 {
 $style=filter_var($style, FILTER_SANITIZE_STRING);
 $fid=filter_var($fid, FILTER_VALIDATE_INT);
-
-slog('Image requested', array($style, $fid));
 
 // We allow anonymous retrieval of product images, client must still be authenticated with client key
 if (!$this->l->isClientAuthenticated())
@@ -125,17 +151,22 @@ if (!$this->l->isClientAuthenticated())
 if (!is_numeric($fid))
 	return Flight::json(Response::data(400, 'Invalid image identifier', 'image'), 400);
 
+$key=sprintf("img-%s-%d", $style, $fid);
+
+$data=getImageFromCache($key);
+if ($data!==false)
+	$this->dumpImageData('image/jpeg', $data); // Does not return
+
+$opts=null;
 try {
 	$file=$this->api->view_file($fid, false, true);
 } catch (Exception $e) {
-	slog('Image load failed', false, $e);
+	slog('ImageFromAPIFailed', false, $e);
 	return Flight::json(Response::data(500, 'Image details load failed', 'image', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 }
 
 if (!property_exists($file, "image_styles"))
 	return Flight::json(Response::data(500, 'Image style error', 'image'), 500);
-
-slog("File", $file);
 
 $styles=$file->image_styles;
 if (!is_object($styles))
@@ -144,7 +175,15 @@ if (!is_object($styles))
 if (!property_exists($styles, "$style"))
 	return Flight::json(Response::data(412, 'Image style not configured', 'image'), 412);
 
-return $this->dumpImageUrl('image/jpeg', $styles->$style);
+$data=$this->get_image($styles->$style);
+if ($data===false) {
+	slog('ImageFetchFailed', $styles->$style);
+	die('');
+}
+
+$this->setImageToCache($key, $data);
+
+$this->dumpImageData('image/jpeg', $data);
 }
 
 protected Function dataToProduct(array $d)

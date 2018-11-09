@@ -38,6 +38,9 @@ $this->dbpass=$config['apikey_password'];
 if (isset($config['debug']) && $config['debug'])
 	$this->d->set_debug(true);
 
+if (isset($config['api_username']) && $config['api_password'])
+	$this->d->set_api_auth($config['api_username'], $config['api_password']);
+
 // Client API to Drupal Product field mapping
 $this->map=array(
  'sku'=>array(

@@ -49,6 +49,8 @@ private $csrf_token=null;
 
 // API key auth (WIP)
 protected $apikey;
+protected $api_username;
+protected $api_password;
 
 // Current language
 protected $language;
@@ -92,6 +94,12 @@ public function set_debug($bool)
 $this->debug=$bool;
 }
 
+public function set_api_auth($u, $p)
+{
+$this->api_username=$u;
+$this->api_password=$p;
+}
+
 private function getcurl($url)
 {
 $curl=curl_init($url);
@@ -105,6 +113,9 @@ $options=array(
 	CURLINFO_HEADER_OUT => TRUE,
 	CURLOPT_HTTPHEADER => $header);
 curl_setopt_array($curl, $options);
+
+if (!empty($this->api_username) && !empty($this->api_password))
+	curl_setopt($curl, CURLOPT_USERPWD, $this->api_username . ":" . $this->api_password);
 
 if (is_string($this->session_cookie))
 	curl_setopt($curl, CURLOPT_COOKIE, $this->session_cookie);

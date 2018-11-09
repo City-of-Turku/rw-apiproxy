@@ -90,7 +90,7 @@ for ($i=0;$i<$c;$i++) {
 return $fids;
 }
 
-private Function dumpImageData($mime, $date)
+private Function dumpImageData($mime, $data)
 {
 // Cache for 10 minutes, for now.. we might up this as product images won't change afterwards
 if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
@@ -153,7 +153,7 @@ if (!is_numeric($fid))
 
 $key=sprintf("img-%s-%d", $style, $fid);
 
-$data=getImageFromCache($key);
+$data=$this->getImageFromCache($key);
 if ($data!==false)
 	$this->dumpImageData('image/jpeg', $data); // Does not return
 
@@ -175,7 +175,9 @@ if (!is_object($styles))
 if (!property_exists($styles, "$style"))
 	return Flight::json(Response::data(412, 'Image style not configured', 'image'), 412);
 
-$data=$this->get_image($styles->$style);
+// XXX $opts=array('username'=>'','password'=>'');
+
+$data=$this->get_image($styles->$style, $opts);
 if ($data===false) {
 	slog('ImageFetchFailed', $styles->$style);
 	die('');

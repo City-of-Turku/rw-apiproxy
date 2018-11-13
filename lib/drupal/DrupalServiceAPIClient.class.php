@@ -606,6 +606,18 @@ $r=$this->executeGET('order.json', $param);
 return json_decode($r);
 }
 
+public function set_order_status($oid, $status)
+{
+$data=array("status"=>$status);
+$r=$this->executePUT(sprintf('order/%d.json', $oid), json_encode($data));
+return json_decode($r);
+}
+
+public function set_order_completed($oid)
+{
+return $this->set_order_status($oid, "completed");
+}
+
 /******************************************************************
  * Views
  ******************************************************************/

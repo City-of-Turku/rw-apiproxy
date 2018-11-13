@@ -553,6 +553,11 @@ foreach ($data as $id=>$o) {
 return $ps;
 }
 
+public function set_order_status($oid, $status)
+{
+return $this->d->set_order_status($oid, $status);
+}
+
 protected function cart($clear=false)
 {
 if ($clear)

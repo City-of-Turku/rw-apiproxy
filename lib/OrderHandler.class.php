@@ -6,6 +6,7 @@ class OrderHandler
 {
 private $l;
 private $be;
+private $validStatus=array("canceled", "pending", "processing", "completed");
 
 public function __construct(LoginHandler &$l, &$be)
 {
@@ -36,6 +37,9 @@ switch ($otype) {
 	break;
 	case 'pending':
 		$fr=array('status'=>'pending');
+	break;
+	case 'processing':
+		$fr=array('status'=>'processing');
 	break;
 	case 'completed':
 		$fr=array('status'=>'completed');
@@ -76,6 +80,25 @@ try {
 }
 
 Flight::json(Response::data(201, 'Orders', 'create', $ps));
+}
+
+public Function setStatus($oid)
+{
+if (!$this->l->isAuthenticated())
+	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
+
+$r=Flight::request()->data;
+$oid=filter_var($oid, FILTER_VALIDATE_INT);
+$status=$r["status"];
+
+try {
+	$ps=$this->be->set_order_status($oid, $status);
+} catch (Exception $e) {
+	Flight::json(Response::data(500, 'Order status update failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	return false;
+}
+
+Flight::json(Response::data(200, 'Orders', 'status', $ps));
 }
 
 } // class

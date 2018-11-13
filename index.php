@@ -107,9 +107,12 @@ Flight::route('GET /download/@apk', array($app, 'download'));
 
 // Orders
 Flight::route('GET /orders', array($order, 'orders'));
-//Flight::route('GET /orders/@status', array($order, 'orders'));
+Flight::route('GET /orders/@status', array($order, 'orders'));
 Flight::route('GET /order/@order', array($order, 'order'));
 Flight::route('POST /orders', array($order, 'create'));
+
+// Order status change
+Flight::route('POST /order/@oid:[0-9]{1,5}/status', array($order, 'setStatus'));
 
 // Storage locations list endpoint
 Flight::route('GET /locations', array($loc, 'locations'));

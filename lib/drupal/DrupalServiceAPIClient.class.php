@@ -136,7 +136,7 @@ switch ($status) {
 	case 401:
 		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
 	case 404:
-		throw new DrupalServiceException('Not found', $status);
+		throw new DrupalServiceNotFoundException('Requested item not found', $status);
 	case 500:
 		throw new DrupalServiceException('Internal error', $status);
 	default:
@@ -608,7 +608,7 @@ return json_decode($r);
 
 public function set_order_status($oid, $status)
 {
-$data=array("status"=>$status);
+$data=array("status"=>$status, "log"=>"Status set via API");
 $r=$this->executePUT(sprintf('order/%d.json', $oid), json_encode($data));
 return json_decode($r);
 }

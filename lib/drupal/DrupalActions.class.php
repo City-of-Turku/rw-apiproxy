@@ -555,7 +555,12 @@ return $ps;
 
 public function set_order_status($oid, $status)
 {
-return $this->d->set_order_status($oid, $status);
+try {
+	$o=$this->d->set_order_status($oid, $status);
+	return $this->drupalJSONtoOrder($o->order_number, $o);
+} catch (DrupalServiceNotFoundException $e) {
+	throw new OrderNotFoundException("Order $oid not found", 404, $e);
+}
 }
 
 protected function cart($clear=false)

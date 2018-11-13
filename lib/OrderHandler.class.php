@@ -1,6 +1,7 @@
 <?php
 
 class OrderException extends Exception {}
+class OrderNotFoundException extends OrderException {}
 
 class OrderHandler
 {
@@ -75,8 +76,7 @@ try {
 		throw new Exception('Invalid products');
 	$ps=$this->be->createProductOrderFromRef($barcodes);
 } catch (Exception $e) {
-	Flight::json(Response::data(500, 'Order creation failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
-	return false;
+	return Flight::json(Response::data(500, 'Order creation failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 }
 
 Flight::json(Response::data(201, 'Orders', 'create', $ps));
@@ -93,12 +93,13 @@ $status=$r["status"];
 
 try {
 	$ps=$this->be->set_order_status($oid, $status);
+} catch (OrderNotFoundException $e) {
+	return Flight::json(Response::data(404, 'Order status update failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 404);
 } catch (Exception $e) {
-	Flight::json(Response::data(500, 'Order status update failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
-	return false;
+	return Flight::json(Response::data(500, 'Order status update failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
 }
 
-Flight::json(Response::data(200, 'Orders', 'status', $ps));
+Flight::json(Response::data(200, 'Order', 'status', $ps));
 }
 
 } // class

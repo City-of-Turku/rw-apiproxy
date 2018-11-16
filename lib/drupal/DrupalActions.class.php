@@ -23,6 +23,8 @@ private $dsn;
 private $dbuser;
 private $dbpass;
 
+private $rolemap;
+
 public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
@@ -40,6 +42,9 @@ if (isset($config['debug']) && $config['debug'])
 
 if (isset($config['api_username']) && $config['api_password'])
 	$this->d->set_api_auth($config['api_username'], $config['api_password']);
+
+// Drupal role to client role
+$this->rolemap=json_decode(file_get_contents('drupal-rolesmap.json'), true);
 
 // Client API to Drupal Product field mapping
 $this->map=array(
@@ -236,6 +241,16 @@ if ($u===false)
 	throw new Exception('Authentication error', 403);
 
 $u['apitoken']=$this->aes->encrypt($u['apitoken']);
+
+if (is_array($this->rolemap) && $u['roles']) {
+	$r=array();
+	foreach ($u['roles'] as $role) {
+		if (isset($this->rolemap[$role]))
+			$r=array_merge($r, $this->rolemap[$role]);
+	}
+	$u['roles']=array_values($r);
+}
+
 return $u;
 }
 

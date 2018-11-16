@@ -6,4 +6,7 @@ RewriteRule ^(.*)$ index.php [QSA,L]
 <FilesMatch ".+\.ini$">
         Require all denied
 </FilesMatch>
+<FilesMatch ".+\.json$">
+        Require all denied
+</FilesMatch>
 

@@ -1,0 +1,7 @@
+{
+"authenticated user": ["product", "order"],
+"orderhandler": ["orders"],
+"producthandler": ["products"],
+"warehouse": []
+}
+

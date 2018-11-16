@@ -16,9 +16,11 @@ public function locations()
 if (!$this->l->isAuthenticated())
         return Flight::json(Response::data(401, 'Client is not authenticated', 'locations'), 401);
 
-$tmp=$this->be->get_locations();
-if (!$tmp)
+try {
+	$tmp=$this->be->get_locations();
+} catch (Exception $e) {
 	return Flight::json(Response::data(500, 'Failed to retrieve locations', 'locations'), 500);
+}
 
 $r=array();
 foreach ($tmp as $loc) {

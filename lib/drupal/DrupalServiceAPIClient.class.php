@@ -622,11 +622,13 @@ return $this->set_order_status($oid, "completed");
  * Views
  ******************************************************************/
 
-public function retrieve_view($name)
+public function retrieve_view($name, $display='services_1')
 {
 if (!is_string($name))
 	throw new DrupalServiceException('Invalid view name', 500);
-$tmp=sprintf('views/%s.json', $name);
+// We need the display name as of services 1.3
+// https://www.drupal.org/project/services_views/issues/2929369
+$tmp=sprintf('views/%s.json?display_id=%s', $name, $display);
 $r=$this->executeGET($tmp);
 return json_decode($r);
 }

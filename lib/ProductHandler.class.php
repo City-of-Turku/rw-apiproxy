@@ -225,8 +225,6 @@ $req=new Request($r);
 
 if (isset($r['q']))
 	$filter['title']=filter_var(trim($r['q']), FILTER_SANITIZE_STRING);
-else if (isset($r['string']))
-	$filter['title']=filter_var(trim($r['string']), FILTER_SANITIZE_STRING);
 
 if (isset($r['category'])) {
 	$t=$this->api->categoryMap($r['category']);

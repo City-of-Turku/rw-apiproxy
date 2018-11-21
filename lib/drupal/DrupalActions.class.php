@@ -602,6 +602,11 @@ public function clear_cart()
 return $this->cart(true);
 }
 
+public function checkout_cart()
+{
+return $this->d->checkout_cart();
+}
+
 /**
  * mapVariable
  *

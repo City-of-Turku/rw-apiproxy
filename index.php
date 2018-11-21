@@ -110,6 +110,7 @@ Flight::route('GET /orders', array($order, 'orders'));
 Flight::route('GET /orders/@status', array($order, 'orders'));
 Flight::route('GET /order/@order', array($order, 'order'));
 Flight::route('POST /orders', array($order, 'create'));
+Flight::route('POST /order/checkout', array($order, 'checkout'));
 
 // Order status change
 Flight::route('POST /order/@oid:[0-9]{1,5}/status', array($order, 'setStatus'));

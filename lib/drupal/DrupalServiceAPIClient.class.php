@@ -588,6 +588,16 @@ return json_decode($r);
 }
 
 /******************************************************************
+ * Commerce Checkout. Needs customized commerce_services module
+ ******************************************************************/
+
+public function checkout_cart()
+{
+$r=$this->executePOST('checkout.json');
+return json_decode($r);
+}
+
+/******************************************************************
  * Commerce Product Order
  ******************************************************************/
 

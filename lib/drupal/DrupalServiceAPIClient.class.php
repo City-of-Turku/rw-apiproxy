@@ -131,7 +131,7 @@ switch ($status) {
 	case 200:
 		return true;
 	case 400:
-		throw new DrupalServiceException('Bad request', $status);
+		throw new DrupalServiceException('Bad request:'.$response, $status);
 	case 403:
 	case 401:
 		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
@@ -639,6 +639,20 @@ if (!is_string($name))
 // We need the display name as of services 1.3
 // https://www.drupal.org/project/services_views/issues/2929369
 $tmp=sprintf('views/%s.json?display_id=%s', $name, $display);
+$r=$this->executeGET($tmp);
+return json_decode($r);
+}
+
+/******************************************************************
+ * Custom endpoints (exmaple view service)
+ ******************************************************************/
+
+public function retrieve_resource($name)
+{
+if (!is_string($name))
+	throw new DrupalServiceException('Invalid resource name', 500);
+
+$tmp=sprintf('%s.json', $name);
 $r=$this->executeGET($tmp);
 return json_decode($r);
 }

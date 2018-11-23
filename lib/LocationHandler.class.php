@@ -1,25 +1,16 @@
 <?php
 
-class LocationHandler
+class LocationHandler extends Handler
 {
-private $l;
-private $be;
-
-public function __construct(LoginHandler &$l, BackendActionsInterface &$be)
-{
-$this->l=$l;
-$this->be=$be;
-}
 
 public function locations()
 {
-if (!$this->l->isAuthenticated())
-        return Flight::json(Response::data(401, 'Client is not authenticated', 'locations'), 401);
+$this->checkAuth();
 
 try {
 	$tmp=$this->be->get_locations();
 } catch (Exception $e) {
-	return Flight::json(Response::data(500, 'Failed to retrieve locations', 'locations'), 500);
+	return Response::json(500, 'Failed to retrieve locations');
 }
 
 $r=array();
@@ -34,7 +25,7 @@ foreach ($tmp as $loc) {
 	$r[$loc->id]=$loc;
 }
 
-Flight::json(Response::data(200, 'locations' , 'locations', $r));
+Response::json(200, 'Locations', $r);
 }
 
 } // class

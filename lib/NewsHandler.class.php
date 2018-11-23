@@ -2,7 +2,6 @@
 
 class NewsHandler
 {
-private $c;
 private $expire;
 
 public Function __construct(array $config)

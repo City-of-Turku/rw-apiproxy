@@ -290,7 +290,7 @@ return false;
 // Locations
 public function get_locations()
 {
-return $this->d->retrieve_view('locations');
+return $this->d->retrieve_resource('locations');
 }
 
 // Categories
@@ -338,7 +338,7 @@ if (count($er)>0) {
         $data=array('errors'=>$er);
         $data['f']=$f;
         slog('Invalid drupal product data', json_encode($er));
-	throw new Exception('Invalid product data', 400);
+	throw new ProductErrorException('Invalid product data for Drupal Commerce', 400);
 }
 
 $fer=array();
@@ -351,10 +351,10 @@ if (count($files)>0) {
         $f['field_image']=$images;
 } else {
         slog('No images given for product');
-	throw new Exception('Product image(s) are required', 400);
+	throw new ProductImageException('Product image(s) are required', 400);
 }
 
-// xxx
+// XXX: Client supports this now so... fix it!
 $price=0;
 $r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
 slog('Product added', $f);
@@ -367,8 +367,14 @@ public function create_product($type, $sku, $title, $price, array $f)
 return $this->d->create_product($type, $sku, $title, $price, $f);
 }
 
+protected Function setProductImage(stdClass $image, $style)
+{
+return $this->setProductImages(array($image), $style);
+}
+
 protected Function setProductImages(array $images, $style)
 {
+// XXX
 global $api;
 
 $p=array();
@@ -380,7 +386,7 @@ foreach ($images as $img) {
         if ($img->type!='image')
                 continue;
 
-        $p[]=sprintf('%s/product/image/%s/%d', $api['api_base_url'], $style, $img->fid);
+        $p[]=sprintf('%s/images/%s/%d', $api['api_base_url'], $style, $img->fid);
 }
 return $p;
 }
@@ -405,11 +411,20 @@ if (property_exists($po, "field_location")) {
 	$p['location']=$po->field_location;
 }
 if (property_exists($po, "field_image")  && !is_null($po->field_image)) {
-	$i=$this->setProductImages($po->field_image, 'normal');
-	$p['images']=$i;
-	if (count($i)>0) {
-		$t=$this->setProductImages($po->field_image, 'thumbnail');
+	// In case the image field is limited to one, then we get an object direclty, handle this special case
+	$i=false;
+	if (is_object($po->field_image)) {
+		$i=$this->setProductImage($po->field_image, 'normal');
+		$p['images']=$i;
+		$t=$this->setProductImage($po->field_image, 'thumbnail');
 		$p['thumbnail']=$t[0];
+	} else if (is_array($po->field_image)) {
+		$i=$this->setProductImages($po->field_image, 'normal');
+		$p['images']=$i;
+		if (count($i)>0) {
+			$t=$this->setProductImages($po->field_image, 'thumbnail');
+			$p['thumbnail']=$t[0];
+		}
 	}
 }
 if (property_exists($po, "field_paino")) {

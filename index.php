@@ -35,6 +35,7 @@ require('lib/prestashop/PrestashopActions.class.php');
 
 // Handlers
 require('lib/Response.class.php');
+require('lib/Handler.class.php');
 require('lib/LoginHandler.class.php');
 require('lib/ProductHandler.class.php');
 require('lib/OrderHandler.class.php');
@@ -49,7 +50,6 @@ if (!file_exists("config.ini"))
 
 $config=parse_ini_file("config.ini", true);
 $api=$config['Generic'];
-
 $appdata=$config['MobileApp'];
 
 switch ($api['backend']) {
@@ -66,15 +66,15 @@ switch ($api['backend']) {
 }
 
 $l = new LoginHandler($api, $appdata, $be);
-$p = new ProductHandler($l, $be);
-$loc = new LocationHandler($l, $be);
-$order = new OrderHandler($l, $be);
-$app = new ApplicationHandler($l, $appdata);
+$p = new ProductHandler($l, $be, $api);
+$loc = new LocationHandler($l, $be, $api);
+$order = new OrderHandler($l, $be, $api);
+$app = new ApplicationHandler($l, $be, $appdata);
 $news = new NewsHandler($api);
 
 function versionResponse() {
- Flight::json(Response::data(200, 'API Version 3', 'version', array('version'=>3, 'level'=>1)));
- die();
+	Response::json(200, 'API Version 4', 'version', array('version'=>4, 'level'=>1));
+	die();
 }
 
 Flight::route('GET /', 'versionResponse');
@@ -86,21 +86,21 @@ Flight::route('POST /auth/logout', array($l, 'logout'));
 Flight::route('GET /auth/user', array($l, 'userCurrent'));
 
 // User information
-Flight::route('GET /user/@id:[0-9]{1,6}', array($l, 'user'));
+Flight::route('GET /users/@id:[0-9]{1,6}', array($l, 'user'));
 
 // Product related requests
-Flight::route('GET /product/barcode/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'getProduct'));
-Flight::route('GET /product/image/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
-Flight::route('GET /product/latest', array($news, 'productsFeed'));
-Flight::route('GET /products/search', array($p, 'search'));
+Flight::route('GET /products/barcode/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'getProduct'));
 Flight::route('GET /products/@page:[0-9]{1,4}', array($p, 'browse'));
 Flight::route('GET /products', array($p, 'browse'));
 
+// Product images, path is not under products as the reference is a file identifier, not product
+Flight::route('GET /images/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
+
 Flight::route('GET /categories', array($p, 'categories'));
 
-Flight::route('POST /product', array($p, 'add'));
-Flight::route('PUT /product', array($p, 'update'));
-Flight::route('DELETE /product', array($p, 'delete'));
+Flight::route('POST /products', array($p, 'add'));
+Flight::route('PUT /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
+Flight::route('DELETE /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'delete'));
 
 // App download
 Flight::route('GET /download/@apk', array($app, 'download'));
@@ -108,12 +108,14 @@ Flight::route('GET /download/@apk', array($app, 'download'));
 // Orders
 Flight::route('GET /orders', array($order, 'orders'));
 Flight::route('GET /orders/@status', array($order, 'orders'));
-Flight::route('GET /order/@order', array($order, 'order'));
+Flight::route('GET /orders/@order', array($order, 'order'));
 Flight::route('POST /orders', array($order, 'create'));
-Flight::route('POST /order/checkout', array($order, 'checkout'));
 
-// Order status change
-Flight::route('POST /order/@oid:[0-9]{1,5}/status', array($order, 'setStatus'));
+Flight::route('POST /orders/@oid:[0-9]{1,5}/status', array($order, 'setStatus'));
+
+Flight::route('GET /cart', array($order, 'cart'));
+Flight::route('PUT /cart', array($order, 'add'));
+Flight::route('POST /cart', array($order, 'checkout'));
 
 // Storage locations list endpoint
 Flight::route('GET /locations', array($loc, 'locations'));
@@ -121,16 +123,19 @@ Flight::route('GET /locations', array($loc, 'locations'));
 // RSS News feed endpoint
 Flight::route('GET /news', array($news, 'newsFeed'));
 
-Flight::map('notFound', function(){
-  Flight::json(Response::data(404, 'Not found', 'error'), 404);
+Flight::map('notFound', function() {
+	Response::json(404, 'Not found');
+	die();
 });
 
 Flight::map('error', function($e) {
-  $c=$e->getCode();
-  if ($c<400)
-    $c=500;
-  slog("Internal error", $e->getMessage(), $e);
-  Flight::json(Response::data($c, "Internal system error", 'error'), 500);
+	if ($e instanceof AuthenticationException) {
+  		return Response::json($e->getCode(), $e->getMessage());
+	}
+	$c=$e->getCode();
+	if ($c<400) $c=500;
+	slog("Internal error", $e->getMessage(), $e);
+	Response::json($c, "Internal system error");
 });
 
 Flight::start();

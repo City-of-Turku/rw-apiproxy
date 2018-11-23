@@ -25,7 +25,7 @@ return array(
 
 public static function json($code, $message, array $data=null)
 {
-Flight::json(data($code, $message, null, $data), $code);
+Flight::json(Response::data($code, $message, null, $data), $code);
 
 return true;
 }

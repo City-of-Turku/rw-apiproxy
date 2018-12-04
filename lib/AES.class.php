@@ -14,6 +14,10 @@ if(!function_exists('hash_equals')) {
   }
 }
 
+// We need to work with 5.3 workaround option change
+if (!defined('OPENSSL_RAW_DATA'))
+ define('OPENSSL_RAW_DATA', 1);
+
 class AES
 {
 private $key;

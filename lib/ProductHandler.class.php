@@ -111,9 +111,10 @@ private function get_image($url, array $opts=null)
 $c=null;
 if (is_array($opts)) {
 	$auth=base64_encode($opts['username'].":".$opts['password']);
-	$c=stream_context_create(["http" => ["header" => "Authorization: Basic $auth"]]);
+	$sc=array("http" => array("header" => "Authorization: Basic $auth"));
+	$c=stream_context_create($sc);
 }
-return @file_get_contents($url, false, $c);
+return @file_get_contents($url, false, $sc);
 }
 
 private Function getImageFromCache($key)

@@ -1,12 +1,14 @@
 <?php
 
+class ProductErrorException extends Exception {}
+class ProductImageException extends Exception {}
+
 /**
  * Handle product related requests.
  */
-class ProductHandler
+class ProductHandler extends Handler
 {
-private $l;
-private $api;
+private $api; // XXX should follow others: $be
 private $map;
 private $cmap;
 private $umap;
@@ -14,10 +16,11 @@ private $umapr;
 private $catmap;
 private $validSort=array('title_desc','title_asc','date_asc','date_desc','sku','price_asc','price_desc');
 
-public function __construct(LoginHandler &$l, BackendActionsInterface &$be)
+public function __construct(LoginHandler &$l, BackendActionsInterface &$be, array $config=null)
 {
 $this->l=$l;
 $this->api=$be;
+$this->c=$config;
 
 // Product attributes key=>value mappings
 $this->cmap=json_decode(file_get_contents('colormap.json'), true);
@@ -147,10 +150,10 @@ $fid=filter_var($fid, FILTER_VALIDATE_INT);
 
 // We allow anonymous retrieval of product images, client must still be authenticated with client key
 if (!$this->l->isClientAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'image'), 401);
+	return Response::json(401, 'Client is not authenticated');
 
 if (!is_numeric($fid))
-	return Flight::json(Response::data(400, 'Invalid image identifier', 'image'), 400);
+	return Response::json(400, 'Invalid image identifier');
 
 $key=sprintf("img-%s-%d", $style, $fid);
 
@@ -163,29 +166,26 @@ try {
 	$file=$this->api->view_file($fid, false, true);
 } catch (Exception $e) {
 	slog('ImageFromAPIFailed', false, $e);
-	return Flight::json(Response::data(500, 'Image details load failed', 'image', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	return Response::json(500, 'Image loading failed');
 }
 
 if (!property_exists($file, "image_styles"))
-	return Flight::json(Response::data(500, 'Image style error', 'image'), 500);
+	return Response::json(500, 'Image styles not set');
 
 $styles=$file->image_styles;
 if (!is_object($styles))
-	return Flight::json(Response::data(412, 'Image styles are invalid', 'image'), 412);
+	return Response::json(500, 'Image styles are invalid');
 
 if (!property_exists($styles, "$style"))
-	return Flight::json(Response::data(412, 'Image style not configured', 'image'), 412);
-
-// XXX $opts=array('username'=>'','password'=>'');
+	return Response::json(412, 'Image style not configured');
 
 $data=$this->get_image($styles->$style, $opts);
 if ($data===false) {
 	slog('ImageFetchFailed', $styles->$style);
-	die('');
+	return Response::json(500, 'Image data fetch failed');
 }
 
 $this->setImageToCache($key, $data);
-
 $this->dumpImageData('image/jpeg', $data);
 }
 
@@ -201,12 +201,6 @@ $p->stock=1;
 return $p;
 }
 
-// XXX: Deprecated!
-public Function search()
-{
-$this->browse();
-}
-
 /**
  * browse();
  *
@@ -215,8 +209,7 @@ $this->browse();
  */
 public Function browse($page=1)
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
+$this->checkAuth();
 
 $r=Flight::request()->query;
 $filter=array(
@@ -226,13 +219,11 @@ $req=new Request($r);
 
 if (isset($r['q']))
 	$filter['title']=filter_var(trim($r['q']), FILTER_SANITIZE_STRING);
-else if (isset($r['string']))
-	$filter['title']=filter_var(trim($r['string']), FILTER_SANITIZE_STRING);
 
 if (isset($r['category'])) {
 	$t=$this->api->categoryMap($r['category']);
 	if ($t===false)
-		return Flight::json(Response::data(500, 'Invalid category filter', 'browse'), 500);
+		return Response::json(500, 'Invalid category filter');
 	$filter['type']=$t;
 }
 
@@ -255,7 +246,7 @@ switch ($sb) {
 	$sortby=array('created'=>'desc');
 	break;
 	default:
-		return Flight::json(Response::data(500, 'Invalid sorting', 'browse'), 500);
+		return Response::json(500, 'Invalid sorting option given');
 }
 
 $this->browseProducts(false, false, $filter, $sortby);
@@ -279,7 +270,7 @@ $a=$limit===false ? (int)$r['amount'] : $limit;
 
 if ($ip<1 || $ip>5000 || $a<1 || $a>100) {
 	slog('Invalid paging', array($ip, $a));
-	return Flight::json(Response::data(500, 'Invalid page or amount', 'products'), 500);
+	return Response::json(500, 'Invalid page or amount');
 }
 
 $ps=array();
@@ -287,16 +278,16 @@ try {
 	$ps=$this->api->index_products($ip, $a, $filter, $sortby);
 } catch (Exception $e) {
 	slog('browseProduct', false, $e);
-	Flight::json(Response::data(500, 'Data load failed', 'product', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	Response::json(500, 'Data load failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 	return false;
 }
 
 // Special case, search specific barcode
 if (count($ps)===0 && $page==1 && $limit==1 && is_array($filter))
-	return Flight::json(Response::data(404, 'Product not found', 'searchBarcode'), 404);
+	return Response::json(404, 'Product not found');
 
 $data=array('page'=>$ip, 'ramount'=>$a, 'amount'=>count($ps), 'products'=>$ps);
-Flight::json(Response::data(200, 'Products', 'products', $data));
+Response::json(200, 'Products', $data);
 }
 
 /**
@@ -307,8 +298,10 @@ Flight::json(Response::data(200, 'Products', 'products', $data));
  */
 public Function getProduct($barcode)
 {
+$this->checkAuth();
+
 if (!$this->api->validateBarcode($barcode)) {
-	Flight::json(Response::data(500, 'Invalid barcode', 'product'), 500);
+	Response::json(500, 'Invalid barcode');
 	return false;
 }
 
@@ -316,12 +309,11 @@ try {
 	$ps=$this->api->index_products(1, 1, array('sku'=>$barcode));
 } catch (Exception $e) {
 	slog('product', $barcode, $e);
-	Flight::json(Response::data(404, 'Product not found', 'product'), 404);
+	Response::json(404, 'Product not found');
 	return false;
 }
 
-slog('product', $ps[0]);
-Flight::json(Response::data(200, 'Product', 'product', $ps[0]));
+Response::json(200, 'Product', $ps[0]);
 }
 
 protected Function mapVariable($id, $df, array &$o, array &$er)
@@ -453,30 +445,28 @@ return $f;
  */
 public Function add()
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
+$this->checkAuth();
 
 $fer='';
 
 try {
 	$rf=Flight::request()->files;
 	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
-	return Flight::json(Response::data(201, 'Product add', 'product', array("response"=>$r, "file_errors"=>$fer)), 201);
+	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
 } catch (Exception $e) {
 	// XXX: Handle errors properly
 	$data=array('error'=>$e->getMessage());
 	slog('Invalid product data', false, $e);
-	return Flight::json(Response::data(400, 'Invalid product data', 'product', $data), 400);
+	Response::json(400, 'Invalid product data', $data);
 }
 
 }
 
 public Function update()
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
+$this->checkAuth();
 
-Flight::json(Response::data(500, 'Update not implemented', 'product'), 500);
+Response::json(500, 'Update not implemented');
 }
 
 protected Function get_product_from_response($data)
@@ -504,24 +494,23 @@ return $this->get_product_from_response($data);
 
 public Function stockUpdate()
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'stock'), 401);
+$this->checkAuth();
 
-Flight::json(Response::data(500, 'Stock handling not implemented', 'product'), 500);
+Response::json(500, 'Not implemented');
 }
 
 public Function delete()
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
-Flight::json(Response::data(500, 'Delete not implemented', 'product'), 500);
+$this->checkAuth();
+
+Response::json(500, 'Not implemented');
 }
 
 public Function categories()
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'categories'), 401);
-Flight::json(Response::data(200, 'Categories', 'categories', $this->catmap));
+$this->checkAuth();
+
+Response::json(200, 'Categories', $this->catmap);
 }
 
 }

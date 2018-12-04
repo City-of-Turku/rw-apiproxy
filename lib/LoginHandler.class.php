@@ -1,19 +1,19 @@
 <?php
-
 require_once('AES.class.php');
+
+class AuthenticationException extends Exception {}
 
 /**
  * Handle user authentication to services
  *
  */
-class LoginHandler
+class LoginHandler Extends Handler
 {
 private $isClientAuth=false;
 private $isAuth=false;
 //
 private $config;
 private $appdata;
-private $be;
 
 public function __construct(array $config, array $app, BackendActionsInterface &$be)
 {
@@ -23,7 +23,7 @@ $h=getallheaders();
 
 // Check client API key, if it's not ok, then we report that directly and die
 if (!$this->checkAuthenticationKey($h)) {
-	Flight::json(Response::data(500, 'Client authentication error, invalid client API key', 'login'), 500);
+	Response::json(500, 'Client authentication error, invalid client API key');
 	die(); // Fatal error
 }
 
@@ -37,7 +37,7 @@ try {
 	$this->be->set_auth_token($h['X-Auth-Token']);
 	$this->isAuth=$this->be->check_auth();
 } catch (Exception $e) {
-	Flight::json(Response::data(500, 'Internal authentication failure', 'login', array('error'=>$e->getMessage())), 500);
+	Response::json(500, 'Internal authentication failure', array('error'=>$e->getMessage()));
 	die(); // Fatal error, we need to die here as if auth fails, user shouldn't be allowed to do anything
 }
 }
@@ -108,27 +108,26 @@ try {
 		);
 	}
 
-	Flight::json(Response::data(200, 'Login OK', 'login', $u));
+	Response::json(200, 'Login OK', $u);
 } catch (Exception $e) {
 	slog("Login failure", 'login', $e);
-	Flight::json(Response::data(403, 'Login failure', 'login', array('error'=>$e->getMessage())), 403);
+	Response::json(403, 'Login failure', array('error'=>$e->getMessage()));
 }
 }
 
 public function logout()
 {
-Flight::json(Response::data(200, 'Logout OK', 'logout'));
+Response::json(200, 'Logout OK');
 }
 
 public function userCurrent()
 {
-Flight::json(Response::data(200, 'User data', 'user', array()));
+Response::json(200, 'User data');
 }
 
 public function user($uid)
 {
-$u=$this->be->retrieve_user($uid);
-Flight::json(Response::data(200, 'User data', 'user', $u));
+Response::json(200, 'User data', $this->be->retrieve_user($uid));
 }
 
 } // class

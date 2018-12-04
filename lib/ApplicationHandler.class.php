@@ -1,17 +1,7 @@
 <?php
 
-class ApplicationHandler
+class ApplicationHandler extends Handler
 {
-private $l;
-private $apk;
-private $app;
-
-public function __construct(LoginHandler &$l, array $appconf)
-{
-$this->l=$l;
-$this->app=$appconf;
-$this->apk='pkgs/'.$this->app['apk'];
-}
 
 private function sendFile($file)
 {
@@ -29,13 +19,13 @@ die();
 
 public Function download()
 {
-if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'download'));
+$this->checkAuth();
+$file='pkgs/'.$this->config['apk'];
 
-if (file_exists($this->apk))
-	$this->sendFile($this->apk);
+if (file_exists($file))
+	$this->sendFile($file);
 
-Flight::json(Response::data(404, 'Download not found', 'download'), 404);
+Response::json(404, 'Download not found');
 }
 
 } // class

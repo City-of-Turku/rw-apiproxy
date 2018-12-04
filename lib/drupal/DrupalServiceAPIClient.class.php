@@ -131,7 +131,7 @@ switch ($status) {
 	case 200:
 		return true;
 	case 400:
-		throw new DrupalServiceException('Bad request', $status);
+		throw new DrupalServiceException('Bad request:'.$response, $status);
 	case 403:
 	case 401:
 		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
@@ -588,6 +588,16 @@ return json_decode($r);
 }
 
 /******************************************************************
+ * Commerce Checkout. Needs customized commerce_services module
+ ******************************************************************/
+
+public function checkout_cart()
+{
+$r=$this->executePOST('checkout.json');
+return json_decode($r);
+}
+
+/******************************************************************
  * Commerce Product Order
  ******************************************************************/
 
@@ -622,11 +632,27 @@ return $this->set_order_status($oid, "completed");
  * Views
  ******************************************************************/
 
-public function retrieve_view($name)
+public function retrieve_view($name, $display='services_1')
 {
 if (!is_string($name))
 	throw new DrupalServiceException('Invalid view name', 500);
-$tmp=sprintf('views/%s.json', $name);
+// We need the display name as of services 1.3
+// https://www.drupal.org/project/services_views/issues/2929369
+$tmp=sprintf('views/%s.json?display_id=%s', $name, $display);
+$r=$this->executeGET($tmp);
+return json_decode($r);
+}
+
+/******************************************************************
+ * Custom endpoints (exmaple view service)
+ ******************************************************************/
+
+public function retrieve_resource($name)
+{
+if (!is_string($name))
+	throw new DrupalServiceException('Invalid resource name', 500);
+
+$tmp=sprintf('%s.json', $name);
 $r=$this->executeGET($tmp);
 return json_decode($r);
 }

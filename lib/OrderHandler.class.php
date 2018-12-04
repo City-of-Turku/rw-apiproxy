@@ -2,6 +2,7 @@
 
 class OrderException extends Exception {}
 class OrderNotFoundException extends OrderException {}
+class OrderCartIsEmptyException extends OrderException {}
 
 class OrderHandler
 {
@@ -15,21 +16,23 @@ $this->l=$l;
 $this->be=$be;
 }
 
-public Function orders($page=1, $limit=10, $otype='pending', $uid=null)
+public Function orders()
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'orders'));
+	return Response::json(401, 'Client is not authenticated');
 
 $r=Flight::request()->query;
-$ip=$page===false ? (int)$r['page'] : $page;
-$a=$limit===false ? (int)$r['amount'] : $limit;
+$ip=isset($r['page']) ? (int)$r['page'] : 1;
+$a=isset($r['amount']) ? (int)$r['amount'] : 100;
 
-if ($ip<1 || $ip>5000 || $a<1 || $a>50) {
-	return Flight::json(Response::data(500, 'Invalid page or amount', 'orders'));
+if ($ip<1 || $ip>5000 || $a<1 || $a>100) {
+	return Response::json(500, 'Invalid page or amount');
 }
 
+$status=isset($r['status']) ? filter_var(trim($r['status']), FILTER_SANITIZE_STRING) : 'pending';
+
 $ps=array();
-switch ($otype) {
+switch ($status) {
 	case 'all':
 		$fr=null;
 	break;
@@ -48,24 +51,24 @@ switch ($otype) {
 	default:
 		$fr=null;
 }
+$sortby['status']='desc';
 $sortby['created']='desc';
 try {
 	$ps=$this->be->index_orders($ip, $a, $fr, $sortby);
-	slog('Order', $ps);
 } catch (Exception $e) {
-	Flight::json(Response::data(500, 'Order data load failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	Response::json(500, 'Order data load failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 	slog('OrderFail', '', $e);
 	return false;
 }
 
 $data=array('page'=>$ip, 'ramount'=>$a, 'amount'=>count($ps), 'orders'=>$ps);
-Flight::json(Response::data(200, 'Orders', 'orders', $data));
+Response::json(200, 'Orders', $data);
 }
 
 public Function create()
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'create'));
+	return Response::json(401, 'Client is not authenticated');
 
 $r=Flight::request()->data;
 $ps=array();
@@ -76,16 +79,16 @@ try {
 		throw new Exception('Invalid products');
 	$ps=$this->be->createProductOrderFromRef($barcodes);
 } catch (Exception $e) {
-	return Flight::json(Response::data(500, 'Order creation failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	return Response::json(500, 'Order creation failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 }
 
-Flight::json(Response::data(201, 'Orders', 'create', $ps));
+Response::json(201, 'Orders', $ps);
 }
 
 public Function setStatus($oid)
 {
 if (!$this->l->isAuthenticated())
-	return Flight::json(Response::data(401, 'Client is not authenticated', 'browse'), 401);
+	return Response::json(401, 'Client is not authenticated');
 
 $r=Flight::request()->data;
 $oid=filter_var($oid, FILTER_VALIDATE_INT);
@@ -94,12 +97,45 @@ $status=$r["status"];
 try {
 	$ps=$this->be->set_order_status($oid, $status);
 } catch (OrderNotFoundException $e) {
-	return Flight::json(Response::data(404, 'Order status update failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 404);
+	return Response::json(404, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 } catch (Exception $e) {
-	return Flight::json(Response::data(500, 'Order status update failed', 'order', array('line'=>$e->getLine(), 'error'=>$e->getMessage())), 500);
+	return Response::json(500, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 }
 
-Flight::json(Response::data(200, 'Order', 'status', $ps));
+Response::json(200, 'Order', $ps);
+}
+
+public function cart()
+{
+if (!$this->l->isAuthenticated())
+	return Response::json(401, 'Client is not authenticated');
+
+Response::json(200, 'Order', $this->be->cart());
+}
+
+public function addItem()
+{
+if (!$this->l->isAuthenticated())
+	return Response::json(401, 'Client is not authenticated');
+
+$r=new Request(Flight::request()->data);
+
+}
+
+public function checkout()
+{
+if (!$this->l->isAuthenticated())
+	return Response::json(401, 'Client is not authenticated');
+
+try {
+	$ps=$this->be->cart_checkout();
+} catch (OrderNotFoundException $e) {
+	return Response::json(404, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
+} catch (Exception $e) {
+	return Response::json(500, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
+}
+
+Response::json(200, 'Order', $ps);
 }
 
 } // class

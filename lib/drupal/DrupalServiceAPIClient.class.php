@@ -577,14 +577,35 @@ return true;
 
 public function index_cart()
 {
-$r=$this->executeGET('cart.json');
-return json_decode($r);
+return json_decode($this->executeGET('cart.json'));
 }
 
 public function create_cart()
 {
-$r=$this->executePOST('cart.json');
-return json_decode($r);
+return json_decode($this->executePOST('cart.json'));
+}
+
+// Custom commerce_services addition
+public function add_to_order_by_sku($order_id, $sku, $quantity=1)
+{
+$r=array(
+	"order_id"=>(int)$order_id,
+	"type"=>"product",
+	"line_item_label"=>"$sku",
+	"quantity"=>(int)$quantity
+);
+return json_decode($this->executePOST('line-item.json', $r));
+}
+
+public function add_to_order_by_product_id($order_id, $product_id, $quantity=1)
+{
+$r=array(
+	"order_id"=>(int)$order_id,
+	"type"=>"product",
+	"commerce_product"=>(int)$product_id,
+	"quantity"=>(int)$quantity
+);
+return json_decode($this->executePOST('line-item.json', $r));
 }
 
 /******************************************************************

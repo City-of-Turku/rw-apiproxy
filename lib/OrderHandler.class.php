@@ -110,16 +110,30 @@ public function cart()
 if (!$this->l->isAuthenticated())
 	return Response::json(401, 'Client is not authenticated');
 
-Response::json(200, 'Order', $this->be->cart());
+Response::json(200, 'Cart', $this->be->index_cart());
 }
 
-public function addItem()
+public function clearCart()
+{
+if (!$this->l->isAuthenticated())
+	return Response::json(401, 'Client is not authenticated');
+
+Response::json(200, 'Cart', $this->be->clear_cart());
+}
+
+public function addProduct()
 {
 if (!$this->l->isAuthenticated())
 	return Response::json(401, 'Client is not authenticated');
 
 $r=new Request(Flight::request()->data);
 
+$sku=$r->getStr("sku");
+$q=$r->getInt("quantity");
+
+slog("Cart", Flight::request()->data);
+
+Response::json(200, 'Cart', $this->be->add_to_cart($sku, $q));
 }
 
 public function checkout()
@@ -128,14 +142,14 @@ if (!$this->l->isAuthenticated())
 	return Response::json(401, 'Client is not authenticated');
 
 try {
-	$ps=$this->be->cart_checkout();
+	$ps=$this->be->checkout_cart();
 } catch (OrderNotFoundException $e) {
 	return Response::json(404, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 } catch (Exception $e) {
 	return Response::json(500, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 }
 
-Response::json(200, 'Order', $ps);
+Response::json(200, 'Cart', $ps);
 }
 
 } // class

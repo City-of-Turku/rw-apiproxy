@@ -14,7 +14,7 @@ class ResponseException extends Exception {}
 class Response
 {
 
-public static function data($code, $message, $op, array $data=null)
+public static function data($code, $message, $op, $data=null)
 {
 return array(
 	'version'=>4,
@@ -23,7 +23,7 @@ return array(
 	'data'=>$data);
 }
 
-public static function json($code, $message, array $data=null)
+public static function json($code, $message, $data=null)
 {
 Flight::json(Response::data($code, $message, null, $data), $code);
 

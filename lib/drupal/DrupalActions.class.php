@@ -595,16 +595,29 @@ try {
 
 protected function cart($clear=false)
 {
-if ($clear)
-	$data=$this->d->clear_cart();
-else
-	$data=$this->d->index_cart();
-// Looks like an order list but with just one item, so make sure it is that
-if (is_array($data) && count($data)==1) {
-	$o=array_shift($data);
-	return $this->drupalJSONtoOrder($o->order_number, $o);
+if ($clear) {
+	$data=$this->d->create_cart();
+	// When clearing/creating we get a nice response!
+	return $this->drupalJSONtoOrder($data->order_number, $data);
+}
+
+// but...
+$data=$this->d->index_cart();
+$cart=null;
+// Loop over the "one" property that is number
+foreach ($data as $c) {
+	$cart=$c;
+}
+
+if (is_object($cart)) {
+	return $this->drupalJSONtoOrder($cart->order_number, $cart);
 }
 return false;
+}
+
+public function add_to_cart($sku, $quantity)
+{
+return $this->d->add_to_cart_by_sku($sku, $quantity);
 }
 
 public function index_cart()

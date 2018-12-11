@@ -582,30 +582,59 @@ return json_decode($this->executeGET('cart.json'));
 
 public function create_cart()
 {
-return json_decode($this->executePOST('cart.json'));
+return json_decode($this->executePOST('cart.json', json_encode(array())));
 }
 
 // Custom commerce_services addition
 public function add_to_order_by_sku($order_id, $sku, $quantity=1)
 {
+if (!$this->validate_product_sku($sku))
+	throw new DrupalServiceException('Invalid product SKU', 500);
+
+if ($quantity<1 || !is_numeric($quantity))
+	throw new DrupalServiceException('Invalid product quantity', 500);
+
 $r=array(
 	"order_id"=>(int)$order_id,
 	"type"=>"product",
 	"line_item_label"=>"$sku",
 	"quantity"=>(int)$quantity
 );
-return json_decode($this->executePOST('line-item.json', $r));
+return json_decode($this->executePOST('line-item.json', json_encode($r)));
+}
+
+public function add_to_cart_by_sku($sku, $quantity=1)
+{
+if (!$this->validate_product_sku($sku))
+	throw new DrupalServiceException('Invalid product SKU', 500);
+if ($quantity<1 || !is_numeric($quantity))
+	throw new DrupalServiceException('Invalid product quantity', 500);
+
+$r=array(
+	"type"=>"product",
+	"line_item_label"=>"$sku",
+	"quantity"=>(int)$quantity
+);
+return json_decode($this->executePOST('line-item.json', json_encode($r)));
 }
 
 public function add_to_order_by_product_id($order_id, $product_id, $quantity=1)
 {
+if ($order_id<1 || !is_numeric($order_id))
+	throw new DrupalServiceException('Invalid product id', 500);
+
+if ($product_id<1 || !is_numeric($product_id))
+	throw new DrupalServiceException('Invalid product id', 500);
+
+if ($quantity<1 || !is_numeric($quantity))
+	throw new DrupalServiceException('Invalid product quantity', 500);
 $r=array(
 	"order_id"=>(int)$order_id,
 	"type"=>"product",
 	"commerce_product"=>(int)$product_id,
 	"quantity"=>(int)$quantity
 );
-return json_decode($this->executePOST('line-item.json', $r));
+return json_decode($this->executePOST('line-item.json', json_encode($r)));
 }
 
 /******************************************************************
@@ -614,7 +643,7 @@ return json_decode($this->executePOST('line-item.json', $r));
 
 public function checkout_cart()
 {
-$r=$this->executePOST('checkout.json');
+$r=$this->executePOST('checkout.json', json_encode(array()));
 return json_decode($r);
 }
 

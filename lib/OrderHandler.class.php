@@ -3,11 +3,10 @@
 class OrderException extends Exception {}
 class OrderNotFoundException extends OrderException {}
 class OrderCartIsEmptyException extends OrderException {}
+class OrderOutOfStockException extends OrderException {}
 
-class OrderHandler
+class OrderHandler extends Handler
 {
-private $l;
-private $be;
 private $validStatus=array("canceled", "pending", "processing", "completed");
 
 public function __construct(LoginHandler &$l, &$be)
@@ -18,8 +17,7 @@ $this->be=$be;
 
 public Function orders()
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 $r=Flight::request()->query;
 $ip=isset($r['page']) ? (int)$r['page'] : 1;
@@ -67,8 +65,7 @@ Response::json(200, 'Orders', $data);
 
 public Function create()
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 $r=Flight::request()->data;
 $ps=array();
@@ -87,8 +84,7 @@ Response::json(201, 'Orders', $ps);
 
 public Function setStatus($oid)
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 $r=Flight::request()->data;
 $oid=filter_var($oid, FILTER_VALIDATE_INT);
@@ -107,24 +103,21 @@ Response::json(200, 'Order', $ps);
 
 public function cart()
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 Response::json(200, 'Cart', $this->be->index_cart());
 }
 
 public function clearCart()
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 Response::json(200, 'Cart', $this->be->clear_cart());
 }
 
 public function addProduct()
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 $r=new Request(Flight::request()->data);
 
@@ -138,15 +131,16 @@ Response::json(200, 'Cart', $this->be->add_to_cart($sku, $q));
 
 public function checkout()
 {
-if (!$this->l->isAuthenticated())
-	return Response::json(401, 'Client is not authenticated');
+$this->checkAuth();
 
 try {
 	$ps=$this->be->checkout_cart();
+} catch (OrderOutOfStockException $e) {
+	return Response::json(409, 'Checkout failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 } catch (OrderNotFoundException $e) {
-	return Response::json(404, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
+	return Response::json(404, 'Checkout failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 } catch (Exception $e) {
-	return Response::json(500, 'Order status update failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
+	return Response::json(500, 'Checkout failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 }
 
 Response::json(200, 'Cart', $ps);

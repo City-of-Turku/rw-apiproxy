@@ -13,12 +13,10 @@ define('AUTH_ANONYMOUS', 0);
 define('AUTH_BASIC', 1);
 define('AUTH_SESSION', 2);
 
-class DrupalServiceException extends
-Exception {
-public $response;
-}
+class DrupalServiceException extends Exception { public $response; }
 class DrupalServiceNotFoundException extends DrupalServiceException { }
 class DrupalServiceAuthException extends DrupalServiceException { }
+class DrupalServiceConflictException extends DrupalServiceException { }
 
 class DrupalServiceResponse
 {
@@ -137,6 +135,8 @@ switch ($status) {
 		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
 	case 404:
 		throw new DrupalServiceNotFoundException('Requested item not found', $status);
+	case 409:
+		throw new DrupalServiceConflictException('Conflict in request', $status);
 	case 500:
 		throw new DrupalServiceException('Internal error', $status);
 	default:

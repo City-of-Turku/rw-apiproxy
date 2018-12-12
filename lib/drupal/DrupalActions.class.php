@@ -604,7 +604,7 @@ if ($clear) {
 // but...
 $data=$this->d->index_cart();
 $cart=null;
-// Loop over the "one" property that is number
+// Loop over the "one" property that is a number
 foreach ($data as $c) {
 	$cart=$c;
 }
@@ -617,7 +617,14 @@ return false;
 
 public function add_to_cart($sku, $quantity)
 {
-return $this->d->add_to_cart_by_sku($sku, $quantity);
+try {
+	return $this->d->add_to_cart_by_sku($sku, $quantity);
+} catch (DrupalServiceNotFoundException $e) {
+	throw new OrderNotFoundException("Product not found", 404, $e);
+} catch (DrupalServiceConflictException $e) {
+	throw new OrderOutOfStockException("Product out of stock", 409, $e);
+}
+
 }
 
 public function index_cart()
@@ -632,7 +639,13 @@ return $this->cart(true);
 
 public function checkout_cart()
 {
-return $this->d->checkout_cart();
+try {
+	return $this->d->checkout_cart();
+} catch (DrupalServiceNotFoundException $e) {
+	throw new OrderNotFoundException("Cart not found", 404, $e);
+} catch (DrupalServiceConflictException $e) {
+	throw new OrderOutOfStockException("Cart products out of stock", 409, $e);
+}
 }
 
 /**

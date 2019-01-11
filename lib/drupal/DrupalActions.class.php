@@ -13,6 +13,7 @@ private $api_config;
 private $config;
 
 private $cmap;
+private $comap;
 private $umap;
 private $umapr;
 private $map;
@@ -28,6 +29,8 @@ private $rolemap;
 public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
+$this->cmap=array();
+$this->comap=array();
 $this->umap=array();
 $this->umapr=array();
 
@@ -120,6 +123,7 @@ $this->map=array(
 	'id'=>'color',
 	'required'=>false,
 	'type'=>'string',
+	'separator'=>';',
 	'cb_map'=>'colorMap'
 	),
  'field_isbn'=>array(
@@ -160,6 +164,18 @@ return 0;
 }
 
 /**
+ * Map color as string into a taxonomy ID, this is instance specific so
+ * we load the map from a json file.
+ */
+private Function colorMap($c)
+{
+if (array_key_exists($c, $this->comap))
+	return $this->comap[$c];
+slog('Color not found in map', json_encode($c));
+return false;
+}
+
+/**
  * categoryMap()
  *
  * Validate given category id against known categories.
@@ -172,9 +188,20 @@ if (array_key_exists($ts, $this->cmap))
 return false;
 }
 
-public Function setCategoryMap(array &$cmap)
+public Function setCategoryMap(array &$m)
 {
-$this->cmap=$cmap;
+$this->cmap=$m;
+}
+
+public Function setColorMap(array &$m)
+{
+$this->comap=$m;
+}
+
+public Function setPurposeMap(array &$m)
+{
+$this->umap=$m;
+$this->umapr=array_flip($m);
 }
 
 protected Function categorySubMap($ts)
@@ -482,7 +509,12 @@ return $this->d->get_product($id);
 
 public function get_product_by_sku($sku)
 {
-return $this->d->get_product_by_sku($sku);
+$r=$this->d->get_product_by_sku($sku);
+
+if (is_array($r) && count($r)===0)
+	throw new ProductNotFoundException("Not product with requested SKU", 404);
+
+return $r;
 }
 
 protected function lineItemToOrderItem(stdClass $pr)
@@ -683,6 +715,10 @@ switch ($type) {
 		if (!is_string($v))
 			$er[$id]='Invalid contents, not a string: '.$v;
 		$v=trim($v);
+		// Input is string, separated by something, result is array of strings (taxonomy for example)
+		if (isset($o['separator'])) {
+			$v=explode($o['separator'], $v);
+		}
 		if (isset($o['cb_map'])) {
 			$v=call_user_func(array($this, $o['cb_map']), $v);
 			if ($v===false) {

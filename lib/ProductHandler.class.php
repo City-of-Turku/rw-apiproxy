@@ -2,6 +2,7 @@
 
 class ProductErrorException extends Exception {}
 class ProductImageException extends Exception {}
+class ProductNotFoundException extends Exception {}
 
 /**
  * Handle product related requests.
@@ -29,37 +30,8 @@ $this->umapr=array_flip($this->umap);
 $this->catmap=json_decode(file_get_contents('categorymap.json'), true);
 
 $this->api->setCategoryMap($this->catmap);
-}
-
-/**
- * Map color as string into a taxonomy ID, this is instance specific so
- * we load the map from a json file.
- */
-private Function colorMap($c)
-{
-if (array_key_exists($c, $this->cmap))
-	return $this->cmap[$c];
-slog('Color not found in map', json_encode($c));
-return false;
-}
-
-/**
- * Map usage taxonomy IDs.
- */
-private Function purposeMap($u)
-{
-if (array_key_exists($u, $this->umap))
-	return $this->umap[$u];
-slog('Purpose not found in map', json_encode($u));
-return false;
-}
-
-private Function purposeMapReverse($u)
-{
-if (array_key_exists($u, $this->umapr))
-	return $this->umapr[$u];
-slog('Purpose id not found in reverse map', json_encode($u));
-return 0;
+$this->api->setColorMap($this->cmap);
+$this->api->setUsageMap($this->umap);
 }
 
 /**
@@ -306,6 +278,7 @@ if (!$this->api->validateBarcode($barcode)) {
 
 try {
 	$ps=$this->api->index_products(1, 1, array('sku'=>$barcode));
+	slog('product', $ps);
 } catch (Exception $e) {
 	slog('product', $barcode, $e);
 	Response::json(404, 'Product not found');

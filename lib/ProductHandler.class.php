@@ -11,9 +11,6 @@ class ProductHandler extends Handler
 {
 private $api; // XXX should follow others: $be
 private $map;
-private $cmap;
-private $umap;
-private $umapr;
 private $catmap;
 private $validSort=array('title_desc','title_asc','date_asc','date_desc','sku','price_asc','price_desc');
 
@@ -23,15 +20,17 @@ $this->l=$l;
 $this->api=$be;
 $this->c=$config;
 
-// Product attributes key=>value mappings
-$this->cmap=json_decode(file_get_contents('colormap.json'), true);
-$this->umap=json_decode(file_get_contents('usagemap.json'), true);
-$this->umapr=array_flip($this->umap);
-$this->catmap=json_decode(file_get_contents('categorymap.json'), true);
+// Load product attributes key=>value mappings from json files
+$cmap=json_decode(file_get_contents('colormap.json'), true);
+$umap=json_decode(file_get_contents('usagemap.json'), true);
 
+// And set them to the backend
+$this->api->setColorMap($cmap);
+$this->api->setUsageMap($umap);
+
+// This is used here too
+$this->catmap=json_decode(file_get_contents('categorymap.json'), true);
 $this->api->setCategoryMap($this->catmap);
-$this->api->setColorMap($this->cmap);
-$this->api->setUsageMap($this->umap);
 }
 
 /**

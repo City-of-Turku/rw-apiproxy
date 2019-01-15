@@ -198,7 +198,7 @@ public Function setColorMap(array &$m)
 $this->comap=$m;
 }
 
-public Function setPurposeMap(array &$m)
+public Function setUsageMap(array &$m)
 {
 $this->umap=$m;
 $this->umapr=array_flip($m);

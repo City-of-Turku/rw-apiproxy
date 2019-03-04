@@ -61,6 +61,10 @@ API keys are checked from a simple database, that does not need to be part of an
 
 Database connection details are set in config.ini, see config.ini.sample for example settings.
 
+Example PostgreSQL setup:
+ createuser --pwprompt --encrypted --no-createrole --no-createdb rv4api
+ createdb --encoding=UTF8 --owner=rv4api rv4api
+
 ## Responses
 All response bodies are in JSON format. 
 HTTP error codes are used to report success and failure.

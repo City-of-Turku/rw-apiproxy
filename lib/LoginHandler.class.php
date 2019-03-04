@@ -19,22 +19,22 @@ public function __construct(array $config, array $app, BackendActionsInterface &
 {
 $this->be=$be;
 $this->appdata=$app;
-$h=getallheaders();
 
 // Check client API key, if it's not ok, then we report that directly and die
-if (!$this->checkAuthenticationKey($h)) {
+if (!$this->checkAuthenticationKey()) {
 	Response::json(500, 'Client authentication error, invalid client API key');
 	die(); // Fatal error
 }
 
 // Check if we are given a login token, if not then client *user* is not yet logged in, not fatal and default 
-if (empty($h['X-Auth-Token'])) {
-	slog("X-Auth-Token is empty");
+// X-Auth-Token
+if (empty($_SERVER['HTTP_X_AUTH_TOKEN'])) {
+	//slog("X-Auth-Token is empty");
 	return;
 }
 
 try {
-	$this->be->set_auth_token($h['X-Auth-Token']);
+	$this->be->set_auth_token($_SERVER['HTTP_X_AUTH_TOKEN']);
 	$this->isAuth=$this->be->check_auth();
 } catch (Exception $e) {
 	Response::json(500, 'Internal authentication failure', array('error'=>$e->getMessage()));
@@ -42,12 +42,13 @@ try {
 }
 }
 
-private function checkAuthenticationKey(array $h)
+private function checkAuthenticationKey()
 {
-if (empty($h['X-AuthenticationKey']))
+// X-AuthenticationKey
+if (empty($_SERVER['HTTP_X_AUTHENTICATIONKEY']))
 	return false;
 
-$r=$this->be->auth_apikey($h['X-AuthenticationKey']);
+$r=$this->be->auth_apikey($_SERVER['HTTP_X_AUTHENTICATIONKEY']);
 if ($r) {
 	$this->isClientAuth=true;
 	return true;

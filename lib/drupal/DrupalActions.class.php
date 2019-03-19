@@ -12,10 +12,18 @@ private $session_token;
 private $api_config;
 private $config;
 
+// Category map
 private $cmap;
+
+// Color taxonomy map
 private $comap;
+private $comapr;
+
+// Usage/Purpose map
 private $umap;
 private $umapr;
+
+// Field map
 private $map;
 
 private $aes;
@@ -31,6 +39,7 @@ public function __construct(array $api, array $config)
 $this->d=new DrupalServiceAPIClient($config['url']);
 $this->cmap=array();
 $this->comap=array();
+$this->comapr=array();
 $this->umap=array();
 $this->umapr=array();
 
@@ -142,6 +151,8 @@ $this->map=array(
 	)
 );
 
+//file_put_contents('/tmp/drupal-field-map.json', json_encode($this->map, JSON_PRETTY_PRINT));
+
 }
 
 /**
@@ -171,7 +182,18 @@ private Function colorMap($c)
 {
 if (array_key_exists($c, $this->comap))
 	return $this->comap[$c];
-slog('Color not found in map', json_encode($c));
+slog('Color string not found in map', json_encode($c));
+return false;
+}
+
+/**
+ * Map color taxonomy ID to color string.
+ */
+private Function colorMapReverse($c)
+{
+if (array_key_exists($c, $this->comapr))
+	return $this->comapr[$c];
+slog('Color ID not found in map', json_encode($c));
 return false;
 }
 
@@ -196,6 +218,7 @@ $this->cmap=$m;
 public Function setColorMap(array &$m)
 {
 $this->comap=$m;
+$this->comapr=array_flip($m);
 }
 
 public Function setUsageMap(array &$m)
@@ -459,7 +482,15 @@ if (property_exists($po, "field_paino")) {
 	$p['size']['weight']=$po->field_paino;
 }
 if (property_exists($po, "field_color")) {
-	$p['color']=$po->field_color;
+	// Handle multiple colors, then they are arrays
+	$p['color']=array();
+
+	if (is_array($po->field_color)) {
+		foreach ($po->field_color as $c)
+			$p['color'][]=$this->colorMapReverse($c);
+	} else {
+		$p['color'][]=$this->colorMapReverse($po->field_color);
+	}
 }
 if (property_exists($po, "field_material")) {
 	$p['material']=$po->field_material;

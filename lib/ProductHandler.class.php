@@ -104,7 +104,7 @@ if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
 }
 // Allow caching on client side
 header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24)));
-header("Content-type: ".$mime);
+header("Content-Type: ".$mime);
 header("Content-Length: ".strlen($data));
 die($data);
 }
@@ -451,6 +451,10 @@ $fer='';
 
 try {
 	$rf=Flight::request()->files;
+	if (count($rf)===0) {
+		Response::json(400, 'Missing product images');
+		return;
+	}
 	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
 	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
 } catch (Exception $e) {

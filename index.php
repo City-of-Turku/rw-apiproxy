@@ -114,8 +114,9 @@ Flight::route('POST /orders', array($order, 'create'));
 Flight::route('POST /orders/@oid:[0-9]{1,5}/status', array($order, 'setStatus'));
 
 Flight::route('GET /cart', array($order, 'cart'));
-Flight::route('PUT /cart', array($order, 'add'));
-Flight::route('POST /cart', array($order, 'checkout'));
+Flight::route('POST /cart', array($order, 'clearCart')); // XXX Delete ?
+Flight::route('POST /cart/item', array($order, 'addProduct'));
+Flight::route('POST /cart/checkout', array($order, 'checkout'));
 
 // Storage locations list endpoint
 Flight::route('GET /locations', array($loc, 'locations'));

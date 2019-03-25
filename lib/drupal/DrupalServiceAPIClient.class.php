@@ -13,12 +13,10 @@ define('AUTH_ANONYMOUS', 0);
 define('AUTH_BASIC', 1);
 define('AUTH_SESSION', 2);
 
-class DrupalServiceException extends
-Exception {
-public $response;
-}
+class DrupalServiceException extends Exception { public $response; }
 class DrupalServiceNotFoundException extends DrupalServiceException { }
 class DrupalServiceAuthException extends DrupalServiceException { }
+class DrupalServiceConflictException extends DrupalServiceException { }
 
 class DrupalServiceResponse
 {
@@ -137,6 +135,8 @@ switch ($status) {
 		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
 	case 404:
 		throw new DrupalServiceNotFoundException('Requested item not found', $status);
+	case 409:
+		throw new DrupalServiceConflictException('Conflict in request', $status);
 	case 500:
 		throw new DrupalServiceException('Internal error', $status);
 	default:
@@ -577,14 +577,64 @@ return true;
 
 public function index_cart()
 {
-$r=$this->executeGET('cart.json');
-return json_decode($r);
+return json_decode($this->executeGET('cart.json'));
 }
 
 public function create_cart()
 {
-$r=$this->executePOST('cart.json');
-return json_decode($r);
+return json_decode($this->executePOST('cart.json', json_encode(array())));
+}
+
+// Custom commerce_services addition
+public function add_to_order_by_sku($order_id, $sku, $quantity=1)
+{
+if (!$this->validate_product_sku($sku))
+	throw new DrupalServiceException('Invalid product SKU', 500);
+
+if ($quantity<1 || !is_numeric($quantity))
+	throw new DrupalServiceException('Invalid product quantity', 500);
+
+$r=array(
+	"order_id"=>(int)$order_id,
+	"type"=>"product",
+	"line_item_label"=>"$sku",
+	"quantity"=>(int)$quantity
+);
+return json_decode($this->executePOST('line-item.json', json_encode($r)));
+}
+
+public function add_to_cart_by_sku($sku, $quantity=1)
+{
+if (!$this->validate_product_sku($sku))
+	throw new DrupalServiceException('Invalid product SKU', 500);
+if ($quantity<1 || !is_numeric($quantity))
+	throw new DrupalServiceException('Invalid product quantity', 500);
+
+$r=array(
+	"type"=>"product",
+	"line_item_label"=>"$sku",
+	"quantity"=>(int)$quantity
+);
+return json_decode($this->executePOST('line-item.json', json_encode($r)));
+}
+
+public function add_to_order_by_product_id($order_id, $product_id, $quantity=1)
+{
+if ($order_id<1 || !is_numeric($order_id))
+	throw new DrupalServiceException('Invalid product id', 500);
+
+if ($product_id<1 || !is_numeric($product_id))
+	throw new DrupalServiceException('Invalid product id', 500);
+
+if ($quantity<1 || !is_numeric($quantity))
+	throw new DrupalServiceException('Invalid product quantity', 500);
+$r=array(
+	"order_id"=>(int)$order_id,
+	"type"=>"product",
+	"commerce_product"=>(int)$product_id,
+	"quantity"=>(int)$quantity
+);
+return json_decode($this->executePOST('line-item.json', json_encode($r)));
 }
 
 /******************************************************************
@@ -593,7 +643,7 @@ return json_decode($r);
 
 public function checkout_cart()
 {
-$r=$this->executePOST('checkout.json');
+$r=$this->executePOST('checkout.json', json_encode(array()));
 return json_decode($r);
 }
 

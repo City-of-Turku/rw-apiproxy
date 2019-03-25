@@ -12,9 +12,18 @@ private $session_token;
 private $api_config;
 private $config;
 
+// Category map
 private $cmap;
+
+// Color taxonomy map
+private $comap;
+private $comapr;
+
+// Usage/Purpose map
 private $umap;
 private $umapr;
+
+// Field map
 private $map;
 
 private $aes;
@@ -28,6 +37,9 @@ private $rolemap;
 public function __construct(array $api, array $config)
 {
 $this->d=new DrupalServiceAPIClient($config['url']);
+$this->cmap=array();
+$this->comap=array();
+$this->comapr=array();
 $this->umap=array();
 $this->umapr=array();
 
@@ -120,6 +132,7 @@ $this->map=array(
 	'id'=>'color',
 	'required'=>false,
 	'type'=>'string',
+	'separator'=>';',
 	'cb_map'=>'colorMap'
 	),
  'field_isbn'=>array(
@@ -137,6 +150,8 @@ $this->map=array(
 	'cb_validate'=>'validateEAN'
 	)
 );
+
+//file_put_contents('/tmp/drupal-field-map.json', json_encode($this->map, JSON_PRETTY_PRINT));
 
 }
 
@@ -160,6 +175,29 @@ return 0;
 }
 
 /**
+ * Map color as string into a taxonomy ID, this is instance specific so
+ * we load the map from a json file.
+ */
+private Function colorMap($c)
+{
+if (array_key_exists($c, $this->comap))
+	return $this->comap[$c];
+slog('Color string not found in map', json_encode($c));
+return false;
+}
+
+/**
+ * Map color taxonomy ID to color string.
+ */
+private Function colorMapReverse($c)
+{
+if (array_key_exists($c, $this->comapr))
+	return $this->comapr[$c];
+slog('Color ID not found in map', json_encode($c));
+return false;
+}
+
+/**
  * categoryMap()
  *
  * Validate given category id against known categories.
@@ -172,9 +210,21 @@ if (array_key_exists($ts, $this->cmap))
 return false;
 }
 
-public Function setCategoryMap(array &$cmap)
+public Function setCategoryMap(array &$m)
 {
-$this->cmap=$cmap;
+$this->cmap=$m;
+}
+
+public Function setColorMap(array &$m)
+{
+$this->comap=$m;
+$this->comapr=array_flip($m);
+}
+
+public Function setUsageMap(array &$m)
+{
+$this->umap=$m;
+$this->umapr=array_flip($m);
 }
 
 protected Function categorySubMap($ts)
@@ -432,7 +482,15 @@ if (property_exists($po, "field_paino")) {
 	$p['size']['weight']=$po->field_paino;
 }
 if (property_exists($po, "field_color")) {
-	$p['color']=$po->field_color;
+	// Handle multiple colors, then they are arrays
+	$p['color']=array();
+
+	if (is_array($po->field_color)) {
+		foreach ($po->field_color as $c)
+			$p['color'][]=$this->colorMapReverse($c);
+	} else {
+		$p['color'][]=$this->colorMapReverse($po->field_color);
+	}
 }
 if (property_exists($po, "field_material")) {
 	$p['material']=$po->field_material;
@@ -482,7 +540,12 @@ return $this->d->get_product($id);
 
 public function get_product_by_sku($sku)
 {
-return $this->d->get_product_by_sku($sku);
+$r=$this->d->get_product_by_sku($sku);
+
+if (is_array($r) && count($r)===0)
+	throw new ProductNotFoundException("Not product with requested SKU", 404);
+
+return $r;
 }
 
 protected function lineItemToOrderItem(stdClass $pr)
@@ -595,16 +658,36 @@ try {
 
 protected function cart($clear=false)
 {
-if ($clear)
-	$data=$this->d->clear_cart();
-else
-	$data=$this->d->index_cart();
-// Looks like an order list but with just one item, so make sure it is that
-if (is_array($data) && count($data)==1) {
-	$o=array_shift($data);
-	return $this->drupalJSONtoOrder($o->order_number, $o);
+if ($clear) {
+	$data=$this->d->create_cart();
+	// When clearing/creating we get a nice response!
+	return $this->drupalJSONtoOrder($data->order_number, $data);
+}
+
+// but...
+$data=$this->d->index_cart();
+$cart=null;
+// Loop over the "one" property that is a number
+foreach ($data as $c) {
+	$cart=$c;
+}
+
+if (is_object($cart)) {
+	return $this->drupalJSONtoOrder($cart->order_number, $cart);
 }
 return false;
+}
+
+public function add_to_cart($sku, $quantity)
+{
+try {
+	return $this->d->add_to_cart_by_sku($sku, $quantity);
+} catch (DrupalServiceNotFoundException $e) {
+	throw new OrderNotFoundException("Product not found", 404, $e);
+} catch (DrupalServiceConflictException $e) {
+	throw new OrderOutOfStockException("Product out of stock", 409, $e);
+}
+
 }
 
 public function index_cart()
@@ -619,7 +702,13 @@ return $this->cart(true);
 
 public function checkout_cart()
 {
-return $this->d->checkout_cart();
+try {
+	return $this->d->checkout_cart();
+} catch (DrupalServiceNotFoundException $e) {
+	throw new OrderNotFoundException("Cart not found", 404, $e);
+} catch (DrupalServiceConflictException $e) {
+	throw new OrderOutOfStockException("Cart products out of stock", 409, $e);
+}
 }
 
 /**
@@ -657,6 +746,10 @@ switch ($type) {
 		if (!is_string($v))
 			$er[$id]='Invalid contents, not a string: '.$v;
 		$v=trim($v);
+		// Input is string, separated by something, result is array of strings (taxonomy for example)
+		if (isset($o['separator'])) {
+			$v=explode($o['separator'], $v);
+		}
 		if (isset($o['cb_map'])) {
 			$v=call_user_func(array($this, $o['cb_map']), $v);
 			if ($v===false) {

@@ -10,7 +10,8 @@ $this->checkAuth();
 try {
 	$tmp=$this->be->get_locations();
 } catch (Exception $e) {
-	return Response::json(500, 'Failed to retrieve locations');
+	Response::json(500, 'Failed to retrieve locations');
+	return false;
 }
 
 $r=array();

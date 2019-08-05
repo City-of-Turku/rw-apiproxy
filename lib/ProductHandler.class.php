@@ -12,6 +12,7 @@ class ProductHandler extends Handler
 private $api; // XXX should follow others: $be
 private $map;
 private $catmap;
+private $colormap;
 private $validSort=array('title_desc','title_asc','date_asc','date_desc','sku','price_asc','price_desc');
 
 public function __construct(LoginHandler &$l, BackendActionsInterface &$be, array $config=null)
@@ -91,7 +92,7 @@ if (is_array($opts)) {
 return @file_get_contents($url, false, $sc);
 }
 
-private Function getImageFromCache($key)
+private Function getDataFromCache($key)
 {
 try {
 	$r=new Redis();
@@ -103,7 +104,7 @@ try {
 return false;
 }
 
-private Function setImageToCache($key, $data)
+private Function setDataToCache($key, $data)
 {
 try {
 	$r=new Redis();
@@ -128,7 +129,7 @@ if (!is_numeric($fid))
 
 $key=sprintf("img-%s-%d", $style, $fid);
 
-$data=$this->getImageFromCache($key);
+$data=$this->getDataFromCache($key);
 if ($data!==false)
 	$this->dumpImageData('image/jpeg', $data); // Does not return
 
@@ -156,7 +157,7 @@ if ($data===false) {
 	return Response::json(500, 'Image data fetch failed');
 }
 
-$this->setImageToCache($key, $data);
+$this->setDataToCache($key, $data);
 $this->dumpImageData('image/jpeg', $data);
 }
 
@@ -483,6 +484,20 @@ public Function categories()
 $this->checkAuth();
 
 Response::json(200, 'Categories', $this->catmap);
+}
+
+public Function colors()
+{
+$this->checkAuth();
+
+$cmap=$this->getDataFromCache('rw-colormap');
+if ($cmap!==false) {
+	slog('Got colors from cache', $cmap);
+	return Response::json(200, 'Colors', $cmap);
+}
+
+slog('Colors not in cache, requesting');
+Response::json(200, 'Colors', $this->api->get_colors());
 }
 
 }

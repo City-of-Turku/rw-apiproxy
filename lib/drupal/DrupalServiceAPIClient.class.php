@@ -682,7 +682,7 @@ return $this->set_order_status($oid, "completed");
  * Views
  ******************************************************************/
 
-public function retrieve_view($name, $display='services_1')
+public function retrieve_view($name, $display='services_1', $assoc = FALSE)
 {
 if (!is_string($name))
 	throw new DrupalServiceException('Invalid view name', 500);
@@ -690,21 +690,21 @@ if (!is_string($name))
 // https://www.drupal.org/project/services_views/issues/2929369
 $tmp=sprintf('views/%s.json?display_id=%s', $name, $display);
 $r=$this->executeGET($tmp);
-return json_decode($r);
+return json_decode($r, $assoc);
 }
 
 /******************************************************************
  * Custom endpoints (exmaple view service)
  ******************************************************************/
 
-public function retrieve_resource($name)
+public function retrieve_resource($name, $assoc = FALSE)
 {
 if (!is_string($name))
 	throw new DrupalServiceException('Invalid resource name', 500);
 
 $tmp=sprintf('%s.json', $name);
 $r=$this->executeGET($tmp);
-return json_decode($r);
+return json_decode($r, $assoc);
 }
 
 }

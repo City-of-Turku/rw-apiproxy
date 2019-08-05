@@ -350,6 +350,18 @@ public function get_categories()
 return false;
 }
 
+public function get_colors()
+{
+$t=$this->d->retrieve_resource('colors', true);
+
+$r=array();
+foreach ($t as $c) {
+	$r[$c['tid']]=array('cid'=>$c['tid'], 'code'=>'#deadbe', 'color'=>$c['name']);
+}
+
+return $r;
+}
+
 // Files (images)
 public function upload_file($file, $filename=null)
 {

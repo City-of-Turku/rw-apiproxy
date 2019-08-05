@@ -96,8 +96,6 @@ Flight::route('GET /products', array($p, 'browse'));
 // Product images, path is not under products as the reference is a file identifier, not product
 Flight::route('GET /images/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
 
-Flight::route('GET /categories', array($p, 'categories'));
-
 Flight::route('POST /products', array($p, 'add'));
 Flight::route('PUT /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
 Flight::route('DELETE /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'delete'));
@@ -118,8 +116,10 @@ Flight::route('POST /cart', array($order, 'clearCart')); // XXX Delete ?
 Flight::route('POST /cart/item', array($order, 'addProduct'));
 Flight::route('POST /cart/checkout', array($order, 'checkout'));
 
-// Storage locations list endpoint
+// Metadata endpoints
 Flight::route('GET /locations', array($loc, 'locations'));
+Flight::route('GET /categories', array($p, 'categories'));
+Flight::route('GET /colors', array($p, 'colors'));
 
 // RSS News feed endpoint
 Flight::route('GET /news', array($news, 'newsFeed'));

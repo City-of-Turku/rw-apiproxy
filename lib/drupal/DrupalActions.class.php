@@ -356,7 +356,7 @@ $t=$this->d->retrieve_resource('colors', true);
 
 $r=array();
 foreach ($t as $c) {
-	$r[$c['tid']]=array('cid'=>$c['tid'], 'code'=>'#deadbe', 'color'=>$c['name']);
+	$r[$c['tid']]=array('cid'=>$c['tid'], 'code'=>$c['code'], 'color'=>$c['name']);
 }
 
 return $r;

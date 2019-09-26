@@ -15,6 +15,8 @@ private $catmap;
 private $colormap;
 private $validSort=array('title_desc','title_asc','date_asc','date_desc','sku','price_asc','price_desc');
 
+private $cmap_cache='rw-colormap-1'; // Bump if format changes
+
 public function __construct(LoginHandler &$l, BackendActionsInterface &$be, array $config=null)
 {
 $this->l=$l;
@@ -22,11 +24,16 @@ $this->api=$be;
 $this->c=$config;
 
 // Load product attributes key=>value mappings from json files
-$cmap=json_decode(file_get_contents('colormap.json'), true);
+//$cmap=json_decode(file_get_contents('colormap.json'), true);
 $umap=json_decode(file_get_contents('usagemap.json'), true);
 
-// And set them to the backend
-$this->api->setColorMap($cmap);
+$tmp=$this->getDataFromCache($this->cmap_cache);
+slog("ColorMapCache", $tmp);
+if ($tmp) {
+	$cmap=json_decode($tmp, true);
+	$this->api->setColorMap($cmap);
+}
+
 $this->api->setUsageMap($umap);
 
 // This is used here too
@@ -490,14 +497,18 @@ public Function colors()
 {
 $this->checkAuth();
 
-$cmap=$this->getDataFromCache('rw-colormap');
-if ($cmap!==false) {
+// Check cache
+$tmp=$this->getDataFromCache($this->cmap_cache);
+if ($tmp!==false) {
+	$cmap=json_decode($tmp, true);
 	slog('Got colors from cache', $cmap);
 	return Response::json(200, 'Colors', $cmap);
 }
 
 slog('Colors not in cache, requesting');
-Response::json(200, 'Colors', $this->api->get_colors());
+$c=$this->api->get_colors();
+$this->setDataToCache($this->cmap_cache, json_encode($c));
+Response::json(200, 'Colors', $c);
 }
 
 }

@@ -175,15 +175,24 @@ return 0;
 }
 
 /**
- * Map color as string into a taxonomy ID, this is instance specific so
- * we load the map from a json file.
+ * Map color as string into a taxonomy ID, this is instance specific.
  */
 private Function colorMap($c)
 {
-if (array_key_exists($c, $this->comap))
-	return $this->comap[$c];
-slog('Color string not found in map', json_encode($c));
-return false;
+slog('Color mapping', $c);
+slog('Map is', $this->comap);
+
+if (!is_array($c))
+	$c=array($c);
+
+$r=array();
+foreach ($c as $cid) {
+	if (array_key_exists($cid, $this->comap))
+		$r[]=$this->comap[$cid]['tid'];
+	else
+		slog('Color string not found in map', $cid);
+}
+return count($r)>0 ? $r : false;
 }
 
 /**
@@ -191,9 +200,10 @@ return false;
  */
 private Function colorMapReverse($c)
 {
+slog('Color reverse mapping', $c);
 if (array_key_exists($c, $this->comapr))
 	return $this->comapr[$c];
-slog('Color ID not found in map', json_encode($c));
+slog('Color ID not found in map', $c);
 return false;
 }
 
@@ -218,7 +228,11 @@ $this->cmap=$m;
 public Function setColorMap(array &$m)
 {
 $this->comap=$m;
-$this->comapr=array_flip($m);
+$r=array();
+foreach ($this->comap as $id => $data) {
+	$r[$data['tid']]=$data;
+}
+$this->comapr=$r;
 }
 
 public Function setUsageMap(array &$m)
@@ -352,11 +366,13 @@ return false;
 
 public function get_colors()
 {
+// Get custom view, in format:
+// [{"apicode":"black","rgb":"#000000","tid":"312","name":"Black"}]
 $t=$this->d->retrieve_resource('colors', true);
-
 $r=array();
 foreach ($t as $c) {
-	$r[$c['tid']]=array('cid'=>$c['tid'], 'code'=>$c['code'], 'color'=>$c['name']);
+	$cid=$c['apicode'];
+	$r[$cid]=array('cid'=>$cid, 'tid'=>$c['tid'], 'code'=>$c['rgb'], 'color'=>$c['name']);
 }
 
 return $r;

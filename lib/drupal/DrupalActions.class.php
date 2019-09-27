@@ -193,9 +193,6 @@ return 0;
  */
 private Function colorMap($c)
 {
-slog('Color mapping', $c);
-slog('Map is', $this->comap);
-
 if (!is_array($c))
 	$c=array($c);
 

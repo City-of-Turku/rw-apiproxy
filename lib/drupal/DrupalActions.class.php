@@ -105,6 +105,20 @@ $this->map=array(
 	'type'=>'string',
 	'cb_validate'=>'validateDescription'
 	),
+ 'field_manufacturer'=>array(
+	'id'=>'manufacturer',
+	'field_id'=>'value',
+	'required'=>false,
+	'type'=>'string',
+	'cb_validate'=>'validateDescription'
+	),
+ 'field_model'=>array(
+	'id'=>'model',
+	'field_id'=>'value',
+	'required'=>false,
+	'type'=>'string',
+	'cb_validate'=>'validateDescription'
+	),
  'field_purpose'=>array(
 	'id'=>'purpose',
 	'required'=>false,
@@ -436,6 +450,7 @@ if (count($files)>0) {
 $price=0;
 $r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
 slog('Product added', $f);
+//throw new ProductErrorException('DevelException', 400);
 return true;
 }
 
@@ -471,7 +486,6 @@ return $p;
 
 protected Function drupalJSONtoProduct(stdClass $po)
 {
-//echo json_encode($po); die();
 $p=array();
 $p['id']=$po->product_id;
 $p['uid']=$po->uid;
@@ -484,10 +498,17 @@ $p['category']=$this->categoryMap($po->type);
 $p['subcategory']=$this->categorySubMap($po->type);
 // Check for a body field!
 $p['description']=$po->title; // XXX
-$p['images']=array();
+
+// Storage location/warehouse
 if (property_exists($po, "field_location")) {
 	$p['location']=$po->field_location;
 }
+if (property_exists($po, "field_location_detail")) {
+	$p['locationdetail']=$po->field_location_detail;
+}
+
+// Images
+$p['images']=array();
 if (property_exists($po, "field_image")  && !is_null($po->field_image)) {
 	// In case the image field is limited to one, then we get an object direclty, handle this special case
 	$i=false;
@@ -505,23 +526,20 @@ if (property_exists($po, "field_image")  && !is_null($po->field_image)) {
 		}
 	}
 }
+if (property_exists($po, "field_vari")) {
+	// Handle multiple colors, when they are arrays
+	$p['color']=array();
+
+	if (is_array($po->field_vari)) {
+		foreach ($po->field_vari as $c)
+			$p['color'][]=$this->colorMapReverse($c);
+	} else {
+		$p['color'][]=$this->colorMapReverse($po->field_vari);
+	}
+}
 if (property_exists($po, "field_paino")) {
 	// Always in Kg!
 	$p['size']['weight']=$po->field_paino;
-}
-if (property_exists($po, "field_color")) {
-	// Handle multiple colors, then they are arrays
-	$p['color']=array();
-
-	if (is_array($po->field_color)) {
-		foreach ($po->field_color as $c)
-			$p['color'][]=$this->colorMapReverse($c);
-	} else {
-		$p['color'][]=$this->colorMapReverse($po->field_color);
-	}
-}
-if (property_exists($po, "field_material")) {
-	$p['material']=$po->field_material;
 }
 if (property_exists($po, "field_koko") && is_object($po->field_koko)) {
 	// Always in cm!
@@ -530,18 +548,27 @@ if (property_exists($po, "field_koko") && is_object($po->field_koko)) {
 	$p['size']['width']=$po->field_koko->width;
 	$p['size']['height']=$po->field_koko->height;
 }
-if (property_exists($po, "field_ean")) {
-	$p['ean']=$po->field_ean;
-}
-if (property_exists($po, "field_isbn")) {
-	$p['isbn']=$po->field_isbn;
-}
 if (property_exists($po, "field_purpose")) {
 	// XXX: Values need to be mapped!!!
 	$p['purpose']=$this->purposeMapReverse($po->field_purpose);
 } else {
 	$p['purpose']=0;
 }
+
+// Simple text properties, XXX simplify handling
+if (property_exists($po, "field_ean")) {
+	$p['ean']=$po->field_ean;
+}
+if (property_exists($po, "field_isbn")) {
+	$p['isbn']=$po->field_isbn;
+}
+if (property_exists($po, "field_model")) {
+	$p['model']=$po->field_model;
+}
+if (property_exists($po, "field_manufacturer")) {
+	$p['manufacturer']=$po->field_manufacturer;
+}
+
 
 return $p;
 }

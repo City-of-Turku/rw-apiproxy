@@ -431,6 +431,10 @@ $fer='';
 
 try {
 	$rf=Flight::request()->files;
+	if (count($rf)===0) {
+		Response::json(400, 'Missing product images');
+		return;
+	}
 	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
 	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
 } catch (Exception $e) {

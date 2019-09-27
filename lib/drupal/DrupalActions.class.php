@@ -213,7 +213,7 @@ private Function colorMapReverse($c)
 {
 slog('Color reverse mapping', $c);
 if (array_key_exists($c, $this->comapr))
-	return $this->comapr[$c];
+	return $this->comapr[$c]['cid'];
 slog('Color ID not found in map', $c);
 return false;
 }

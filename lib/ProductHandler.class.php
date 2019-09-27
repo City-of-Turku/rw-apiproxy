@@ -83,7 +83,7 @@ if (isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
 }
 // Allow caching on client side
 header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + (60 * 60 * 24)));
-header("Content-type: ".$mime);
+header("Content-Type: ".$mime);
 header("Content-Length: ".strlen($data));
 die($data);
 }

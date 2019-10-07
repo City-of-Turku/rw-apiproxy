@@ -20,7 +20,7 @@ die();
 public Function download()
 {
 $this->checkAuth();
-$file='pkgs/'.$this->config['apk'];
+$file='pkgs/'.$this->c['apk'];
 
 if (file_exists($file))
 	$this->sendFile($file);

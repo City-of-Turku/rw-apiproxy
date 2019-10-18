@@ -46,9 +46,10 @@ $api=$config['Generic'];
 $appdata=$config['MobileApp'];
 
 switch ($api['backend']) {
+	case 'drupal7':
 	case 'drupal':
-		require('lib/drupal/DrupalServiceAPIClient.class.php');
-		require('lib/drupal/DrupalActions.class.php');
+		require('lib/drupal7/DrupalServiceAPIClient.class.php');
+		require('lib/drupal7/DrupalActions.class.php');
 
 		$bc=$config['Drupal'];
 		$be=new DrupalActions($api, $bc);

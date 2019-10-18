@@ -26,13 +26,6 @@ require('lib/Product.class.php');
 require('lib/Request.class.php');
 require('lib/BackendActionsInterface.class.php');
 
-// Drupal backend API
-require('lib/drupal/DrupalServiceAPIClient.class.php');
-require('lib/drupal/DrupalActions.class.php');
-
-// Prestashop backend API
-require('lib/prestashop/PrestashopActions.class.php');
-
 // Handlers
 require('lib/Response.class.php');
 require('lib/Handler.class.php');
@@ -54,10 +47,15 @@ $appdata=$config['MobileApp'];
 
 switch ($api['backend']) {
 	case 'drupal':
+		require('lib/drupal/DrupalServiceAPIClient.class.php');
+		require('lib/drupal/DrupalActions.class.php');
+
 		$bc=$config['Drupal'];
 		$be=new DrupalActions($api, $bc);
 	break;
 	case 'prestashop':
+		require('lib/prestashop/PrestashopActions.class.php');
+
 		$bc=$config['Prestashop'];
 		$be=new PrestashopActions($api, $bc);
 	break;

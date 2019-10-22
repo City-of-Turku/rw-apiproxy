@@ -134,7 +134,7 @@ Flight::map('error', function($e) {
 	}
 	$c=$e->getCode();
 	if ($c<400) $c=500;
-	slog("Internal error", $e->getMessage(), $e);
+	slog("Internal error exception", $e->getMessage(), $e, true);
 	Response::json($c, "Internal system error");
 });
 

@@ -295,7 +295,10 @@ $u['created']=$ud->created;
 $u['access']=$ud->access;
 $u['email']=$ud->mail;
 $u['roles']=$ud->roles;
-slog('User', json_encode($this->user));
+
+if ($this->debug)
+	slog('User', json_encode($this->user));
+
 if (property_exists($ud, "field_name")) {
 	// XXX
 }

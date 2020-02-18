@@ -124,15 +124,17 @@ return $curl;
 protected function handleStatus($status, $error, $response)
 {
 switch ($status) {
+	case 200:
+	case 201:
+		return true;
 	case 0:
 		throw new DrupalServiceException('CURL Error: '.$error, $status);
-	case 200:
-		return true;
 	case 400:
 		throw new DrupalServiceException('Bad request:'.$response, $status);
 	case 403:
+		throw new AuthenticationException('Authentication error: '.$response, $status);
 	case 401:
-		throw new DrupalServiceAuthException('Authentication error: '.$response, $status);
+		throw new AuthenticationException('Authentication error: '.$response, $status);
 	case 404:
 		throw new DrupalServiceNotFoundException('Requested item not found', $status);
 	case 409:
@@ -488,7 +490,8 @@ if (!is_object($data))
         return false;
 // Services API returns a object with product id a key.
 // Not very convinient that, so pop the product object.
-$prod=array_pop(get_object_vars($data));
+$ov=get_object_vars($data);
+$prod=array_pop($ov);
 if (!is_object($prod))
         return false;
 return $prod;
@@ -551,6 +554,8 @@ public function get_product($pid)
 {
 if (!is_numeric($pid))
 	throw new DrupalServiceException('Invalid product ID', 500);
+if ($pid<1)
+	throw new DrupalServiceException('Invalid product ID', 500);
 
 $r=$this->executeGET(sprintf('product/%d.json', $pid));
 return json_decode($r);
@@ -568,17 +573,22 @@ return json_decode($r);
 public function update_product_by_sku($sku, array $fields)
 {
 $data=$this->get_product_by_sku($sku);
-slog("DATA", $data);
-$pid=$data->id;
-return $this->update_product($pid, $fields);
+if (!$data)
+	return false;
+$p=$this->get_product_from_response($data);
+return $this->update_product($p->product_id, $fields);
 }
 
 public function update_product($pid, array $fields)
 {
 if (!is_numeric($pid))
 	throw new DrupalServiceException('Invalid product ID', 500);
+if ($pid<1)
+	throw new DrupalServiceException('Invalid product ID', 500);
+
 if (count($fields)==0)
 	return true;
+
 $r=$this->executePUT(sprintf('product/%d.json', $pid), json_encode($fields));
 return json_decode($r);
 }
@@ -587,7 +597,7 @@ public function delete_product($pid)
 {
 if (!is_numeric($pid))
 	throw new DrupalServiceException('Invalid product ID', 500);
-if ($pid<0)
+if ($pid<1)
 	throw new DrupalServiceException('Invalid product ID', 500);
 $this->executeDELETE(sprintf('product/%d.json', $pid));
 // We return true ok success blindly, as any error code (404, etc) throws an exception

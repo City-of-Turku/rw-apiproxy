@@ -439,22 +439,20 @@ $er=array();
 $f=$this->mapRequest($data, $er);
 
 if (count($er)>0) {
-        $data=array('errors'=>$er);
-        $data['f']=$f;
-        slog('Invalid drupal product data', json_encode($er));
-	throw new ProductErrorException('Invalid product data for Drupal Commerce', 400);
+	slog('Invalid product data for add', array('errors'=>$er,'f'=>$f));
+	throw new ProductErrorException('Invalid product data for add', 400);
 }
 
 $fer=array();
 $images=array();
 if (count($files)>0) {
-        $fids=$this->addImagesFromUpload($files, $fer);
-        foreach ($fids as $fid) {
-                $images[]=array('fid'=>$fid);
-        }
-        $f['field_image']=$images;
+	$fids=$this->addImagesFromUpload($files, $fer);
+	foreach ($fids as $fid) {
+		$images[]=array('fid'=>$fid);
+	}
+	$f['field_image']=$images;
 } else {
-        slog('No images given for product');
+	slog('No images given for product');
 	throw new ProductImageException('Product image(s) are required', 400);
 }
 
@@ -472,8 +470,23 @@ public function create_product($type, $sku, $title, $price, array $f)
 return $this->d->create_product($type, $sku, $title, $price, $f);
 }
 
-public function update_product($sku, array $f)
+public function update_product($sku, array $data)
 {
+$er=array();
+
+// xxx, this is bit hacky but whatever, make mapper happy
+$data['barcode']=$sku;
+$f=$this->mapRequest($data, $er);
+
+if (count($er)>0) {
+	slog('Invalid drupal product data for update', array('errors'=>$er,'f'=>$f));
+	// throw new ProductErrorException('Invalid product data for update', 400);
+}
+
+// Remove fields that can not be changed but that mapper needed for validation
+unset($f['sku']);
+unset($f['type']);
+
 return $this->d->update_product_by_sku($sku, $f);
 }
 
@@ -513,8 +526,6 @@ $p['stock']=$po->commerce_stock;
 $p['created']=$po->created;
 $p['category']=$this->categoryMap($po->type);
 $p['subcategory']=$this->categorySubMap($po->type);
-
-slog("PRODUCT", $po);
 
 if (property_exists($po, "field_body")) {
 	$p['description']=$po->field_body;
@@ -613,13 +624,13 @@ return $ps;
 
 public function get_product($id)
 {
-return $this->d->get_product_from_response($this->d->get_product($id));
+$data=$this->d->get_product($id);
+return $this->d->get_product_from_response($data);
 }
 
 public function get_product_by_sku($sku)
 {
 $r=$this->d->get_product_by_sku($sku);
-
 if (is_array($r) && count($r)===0)
 	throw new ProductNotFoundException("Not product with requested SKU", 404);
 

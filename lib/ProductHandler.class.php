@@ -1,8 +1,10 @@
 <?php
 
-class ProductErrorException extends Exception {}
-class ProductImageException extends Exception {}
-class ProductNotFoundException extends Exception {}
+class ProductException extends Exception {}
+class ProductErrorException extends ProductException {}
+class ProductDataException extends ProductException {}
+class ProductImageException extends ProductException {}
+class ProductNotFoundException extends ProductException {}
 
 /**
  * Handle product related requests.
@@ -437,7 +439,7 @@ try {
 	}
 	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
 	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
-} catch (Exception $e) {
+} catch (ProductException $e) {
 	// XXX: Handle errors properly
 	$data=array('error'=>$e->getMessage());
 	slog('Invalid product data', false, $e);
@@ -451,21 +453,18 @@ public Function update($barcode)
 $this->checkAuth();
 
 if (!$this->api->validateBarcode($barcode)) {
-	Response::json(500, 'Invalid product barcode');
+	Response::json(400, 'Invalid product barcode');
 	return false;
 }
 
 $data=Flight::request()->data->getData();
 
-slog("UpdateProductBarcode", $barcode);
-slog("UpdateProduct", $data);
-
 try {
 	$r=$this->api->update_product($barcode, $data);
 	Response::json(200, 'Product update', array("response"=>$r));
-} catch (Exception $e) {
+} catch (ProductException $e) {
 	$data=array('error'=>$e->getMessage());
-	slog('Invalid product data for update', false, $e);
+	slog('Invalid product data for update', $data, $e);
 	Response::json(400, 'Invalid product data for update', $data);
 }
 

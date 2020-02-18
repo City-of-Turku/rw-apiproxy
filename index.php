@@ -96,7 +96,7 @@ Flight::route('GET /products', array($p, 'browse'));
 Flight::route('GET /images/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
 
 Flight::route('POST /products', array($p, 'add'));
-Flight::route('PUT /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
+Flight::route('POST /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
 Flight::route('DELETE /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'delete'));
 
 // App download

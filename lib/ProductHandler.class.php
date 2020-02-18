@@ -256,7 +256,7 @@ $ps=array();
 try {
 	$ps=$this->api->index_products($ip, $a, $filter, $sortby);
 } catch (Exception $e) {
-	slog('browseProduct', false, $e);
+	slog('browseProduct', false, $e, true);
 	Response::json(500, 'Data load failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 	return false;
 }
@@ -446,34 +446,39 @@ try {
 
 }
 
-public Function update()
+public Function update($barcode)
 {
 $this->checkAuth();
 
-Response::json(500, 'Update not implemented');
+if (!$this->api->validateBarcode($barcode)) {
+	Response::json(500, 'Invalid product barcode');
+	return false;
 }
 
-protected Function get_product_from_response($data)
-{
-if (!is_object($data))
-	return false;
-// Services API returns a stupid object with product id as a property. Not very convinient that.
-$prod=array_pop(get_object_vars($data));
-if (!is_object($prod))
-	return false;
-return $prod;
+$data=Flight::request()->data->getData();
+
+slog("UpdateProductBarcode", $barcode);
+slog("UpdateProduct", $data);
+
+try {
+	$r=$this->api->update_product($barcode, $data);
+	Response::json(200, 'Product update', array("response"=>$r));
+} catch (Exception $e) {
+	$data=array('error'=>$e->getMessage());
+	slog('Invalid product data for update', false, $e);
+	Response::json(400, 'Invalid product data for update', $data);
+}
+
 }
 
 protected Function get_by_id($pid)
 {
-$data=$this->api->get_product($pid);
-return $this->get_product_from_response($data);
+return $this->api->get_product($pid);
 }
 
 protected Function get_by_sku($sku)
 {
-$data=$this->api->get_product_by_sku($sku);
-return $this->get_product_from_response($data);
+return $this->api->get_product_by_sku($sku);
 }
 
 public Function stockUpdate()

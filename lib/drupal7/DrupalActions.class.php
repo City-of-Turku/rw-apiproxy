@@ -85,6 +85,12 @@ $this->map=array(
 	'min_value'=>0,
 	'max_value'=>99999
 	),
+ 'field_category'=>array(
+	'id'=>'subcategory',
+	'required'=>false,
+	'type'=>'string',
+	'cb_map'=>'subCategoryMap'
+	),
  'field_varasto'=>array(
 	'id'=>'location',
 	'required'=>true,
@@ -229,6 +235,15 @@ public Function categoryMap($ts)
 if (array_key_exists($ts, $this->cmap))
 	return $ts;
 return false;
+}
+
+public Function subCategoryMap($ts, array $r)
+{
+slog('subcategory', $ts);
+$c=$r['category'];
+if (array_key_exists($ts, $this->cmap))
+	return $ts;
+return array();
 }
 
 public Function setCategoryMap(array &$m)
@@ -457,6 +472,11 @@ public function create_product($type, $sku, $title, $price, array $f)
 return $this->d->create_product($type, $sku, $title, $price, $f);
 }
 
+public function update_product($sku, array $f)
+{
+return $this->d->update_product_by_sku($sku, $f);
+}
+
 protected Function setProductImage(stdClass $image, $style)
 {
 return $this->setProductImages(array($image), $style);
@@ -493,12 +513,18 @@ $p['stock']=$po->commerce_stock;
 $p['created']=$po->created;
 $p['category']=$this->categoryMap($po->type);
 $p['subcategory']=$this->categorySubMap($po->type);
-// Check for a body field!
-$p['description']=$po->title; // XXX
+
+slog("PRODUCT", $po);
+
+if (property_exists($po, "field_body")) {
+	$p['description']=$po->field_body;
+}
 
 // Storage location/warehouse
-if (property_exists($po, "field_location")) {
-	$p['location']=$po->field_location;
+if (property_exists($po, "field_varasto")) {
+	$p['location']=$po->field_varasto;
+} else {
+	$p['location']=0; // "Undefined location"
 }
 if (property_exists($po, "field_location_detail")) {
 	$p['locationdetail']=$po->field_location_detail;
@@ -587,7 +613,7 @@ return $ps;
 
 public function get_product($id)
 {
-return $this->d->get_product($id);
+return $this->d->get_product_from_response($this->d->get_product($id));
 }
 
 public function get_product_by_sku($sku)
@@ -597,7 +623,7 @@ $r=$this->d->get_product_by_sku($sku);
 if (is_array($r) && count($r)===0)
 	throw new ProductNotFoundException("Not product with requested SKU", 404);
 
-return $r;
+return $this->d->get_product_from_response($r);
 }
 
 protected function lineItemToOrderItem(stdClass $pr)
@@ -803,7 +829,7 @@ switch ($type) {
 			$v=explode($o['separator'], $v);
 		}
 		if (isset($o['cb_map'])) {
-			$v=call_user_func(array($this, $o['cb_map']), $v);
+			$v=call_user_func(array($this, $o['cb_map']), $v, $r);
 			if ($v===false) {
 				$er[$id]='Invalid value given, not found in map';
 				return false;
@@ -829,7 +855,7 @@ switch ($type) {
 		else if (isset($o['min_value']) && $v<$o['min_value'])
 			$er[$id]='Value too small: '.$v;
 		if (isset($o['cb_map'])) {
-			$v=call_user_func(array($this, $o['cb_map']), $v);
+			$v=call_user_func(array($this, $o['cb_map']), $v, $r);
 			if ($v===false) {
 				$er[$id]='Invalid value given, not found in map';
 				return false;
@@ -849,6 +875,13 @@ switch ($type) {
 		$v=(int)$v;
 		if ($v<1)
 			$er[$id]='Node reference must be positive.';
+	break;
+	case 'taxonomyid':
+		if (!is_numeric($v))
+			$er[$id]='Taxonomy reference must be a number.';
+		$v=(int)$v;
+		if ($v<1)
+			$er[$id]='Taxonomy reference must be positive.';
 	break;
 	default:
 		$er[$id]='Unknown type. Invalid contents';

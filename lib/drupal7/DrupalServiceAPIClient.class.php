@@ -482,6 +482,18 @@ if (strlen($sku)<3)
 return true;
 }
 
+public function get_product_from_response($data)
+{
+if (!is_object($data))
+        return false;
+// Services API returns a object with product id a key.
+// Not very convinient that, so pop the product object.
+$prod=array_pop(get_object_vars($data));
+if (!is_object($prod))
+        return false;
+return $prod;
+}
+
 protected function prepare_product_fields($type, $sku, $title, $price, array $fields=null)
 {
 // Type, Title, SKU, commerce_price_amount and commerce_price_currency_code are always required for products
@@ -551,6 +563,14 @@ if (!$this->validate_product_sku($sku))
 
 $r=$this->executeGET(sprintf('product.json', array('sku'=>$sku)));
 return json_decode($r);
+}
+
+public function update_product_by_sku($sku, array $fields)
+{
+$data=$this->get_product_by_sku($sku);
+slog("DATA", $data);
+$pid=$data->id;
+return $this->update_product($pid, $fields);
 }
 
 public function update_product($pid, array $fields)

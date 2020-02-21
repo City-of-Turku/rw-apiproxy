@@ -204,12 +204,17 @@ if (!is_array($c))
 
 $r=array();
 foreach ($c as $cid) {
-	if (array_key_exists($cid, $this->comap))
+	if ($cid=='')
+		continue;
+	if (array_key_exists($cid, $this->comap)) {
 		$r[]=$this->comap[$cid]['tid'];
-	else
+	} else {
+		// XXX: Log it only, don't fail
 		slog('Color string not found in map', $cid);
+	}
 }
-return count($r)>0 ? $r : false;
+// Empty array is not an error, just means no color is set
+return $r;
 }
 
 /**
@@ -480,10 +485,10 @@ $f=$this->mapRequest($data, $er);
 
 if (count($er)>0) {
 	slog('Invalid drupal product data for update', array('errors'=>$er,'f'=>$f));
-	// throw new ProductErrorException('Invalid product data for update', 400);
+	throw new ProductErrorException('Invalid product data for update', 400);
 }
 
-// Remove fields that can not be changed but that mapper needed for validation
+// Remove fields that can not be changed but that mapper needs for validation
 unset($f['sku']);
 unset($f['type']);
 
@@ -585,8 +590,6 @@ if (property_exists($po, "field_koko") && is_object($po->field_koko)) {
 if (property_exists($po, "field_purpose")) {
 	// XXX: Values need to be mapped!!!
 	$p['purpose']=$this->purposeMapReverse($po->field_purpose);
-} else {
-	$p['purpose']=0;
 }
 
 // Simple text properties, XXX simplify handling

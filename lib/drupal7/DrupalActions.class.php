@@ -488,6 +488,9 @@ if (count($er)>0) {
 	throw new ProductErrorException('Invalid product data for update', 400);
 }
 
+// Set revision log message
+$f['log']='API made modification';
+
 // Remove fields that can not be changed but that mapper needs for validation
 unset($f['sku']);
 unset($f['type']);

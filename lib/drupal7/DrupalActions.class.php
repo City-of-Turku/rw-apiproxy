@@ -300,8 +300,6 @@ if ($this->uid<1) {
 	return false;
 }
 
-slog('User data', json_encode($s));
-
 $this->session_id=$s[0];
 $this->session_name=$s[1];
 $this->session_token=$s[2];
@@ -495,7 +493,7 @@ $f['log']='API made modification';
 unset($f['sku']);
 unset($f['type']);
 
-return $this->d->update_product_by_sku($sku, $f);
+return $this->drupalJSONtoProduct($this->d->update_product_by_sku($sku, $f));
 }
 
 protected Function setProductImage(stdClass $image, $style)

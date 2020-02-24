@@ -462,9 +462,8 @@ if (count($files)>0) {
 // XXX: Client supports this now so... fix it!
 $price=0;
 $r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
-slog('Product added', $f);
 //throw new ProductErrorException('DevelException', 400);
-return true;
+return $this->drupalJSONtoProduct($r);
 }
 
 // Products
@@ -511,9 +510,13 @@ foreach ($images as $img) {
         // Check that response is valid
         if (!is_object($img))
                 continue;
-        // Check that it is indeed an image
-        if ($img->type!='image')
-                continue;
+
+	// Product add response image data is incomplete, don't check type as it is missing
+	if (property_exists($img, "type")) {
+	        // Check that it is indeed an image
+        	if ($img->type!='image')
+                	continue;
+	}
 
         $p[]=sprintf('%s/images/%s/%d', $api['api_base_url'], $style, $img->fid);
 }
@@ -636,7 +639,7 @@ public function get_product_by_sku($sku)
 {
 $r=$this->d->get_product_by_sku($sku);
 if (is_array($r) && count($r)===0)
-	throw new ProductNotFoundException("Not product with requested SKU", 404);
+	throw new ProductNotFoundException("No product with requested SKU", 404);
 
 return $this->d->get_product_from_response($r);
 }

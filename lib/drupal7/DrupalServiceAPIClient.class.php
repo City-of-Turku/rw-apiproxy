@@ -544,8 +544,6 @@ if (!is_string($title) || trim($title)=='')
 if (!is_numeric($price) || $price<0)
 	throw new DrupalServiceException('Invalid product price', 500);
 
-//print_r($this); die();
-
 $r=$this->executePOST('product.json', json_encode($this->prepare_product_fields($type, $sku, $title, $price, $fields)));
 return json_decode($r);
 }
@@ -566,7 +564,7 @@ public function get_product_by_sku($sku)
 if (!$this->validate_product_sku($sku))
 	throw new DrupalServiceException('Invalid product SKU', 500);
 
-$r=$this->executeGET(sprintf('product.json', array('sku'=>$sku)));
+$r=$this->executeGET(sprintf('product.json?filter[sku]=%s', $sku));
 return json_decode($r);
 }
 

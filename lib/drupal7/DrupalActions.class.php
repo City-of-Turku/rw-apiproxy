@@ -461,9 +461,13 @@ if (count($files)>0) {
 
 // XXX: Client supports this now so... fix it!
 $price=0;
-$r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
-//throw new ProductErrorException('DevelException', 400);
-return $this->drupalJSONtoProduct($r);
+try {
+	$r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
+	//throw new ProductErrorException('DevelException', 400);
+	return $this->drupalJSONtoProduct($r);
+} catch (DrupalServiceConflictException $e) {
+	throw new ProductExistsException('Product SKU already exists', 409, $e);
+}
 }
 
 // Products

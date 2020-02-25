@@ -5,6 +5,7 @@ class ProductErrorException extends ProductException {}
 class ProductDataException extends ProductException {}
 class ProductImageException extends ProductException {}
 class ProductNotFoundException extends ProductException {}
+class ProductExistsException extends ProductException {}
 
 /**
  * Handle product related requests.
@@ -439,11 +440,12 @@ try {
 	}
 	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
 	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
+} catch (ProductExistsException $e) {
+	slog('SKU already exists', false);
+	Response::json(409, 'SKU already exists', array('error'=>$e->getMessage()));
 } catch (ProductException $e) {
-	// XXX: Handle errors properly
-	$data=array('error'=>$e->getMessage());
 	slog('Invalid product data', false, $e);
-	Response::json(400, 'Invalid product data', $data);
+	Response::json(400, 'Invalid product data', array('error'=>$e->getMessage()));
 }
 
 }

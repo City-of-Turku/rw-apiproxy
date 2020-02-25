@@ -595,6 +595,7 @@ $p['title']=$po->title;
 $p['status']=$po->status;
 $p['stock']=$po->commerce_stock;
 $p['created']=$po->created;
+$p['modified']=$po->changed;
 $p['category']=$this->categoryMap($po->type);
 
 if (property_exists($po, "field_body")) {

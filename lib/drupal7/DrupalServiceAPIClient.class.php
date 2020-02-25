@@ -130,7 +130,10 @@ switch ($status) {
 	case 0:
 		throw new DrupalServiceException('CURL Error: '.$error, $status);
 	case 400:
-		throw new DrupalServiceException('Bad request:'.$response, $status);
+		if ($response=='You must specify a unique sku value')
+			throw new DrupalServiceConflictException('SKU in use', 409);
+		else
+			throw new DrupalServiceException('Bad request:'.$response, $status);
 	case 403:
 		throw new AuthenticationException('Authentication error: '.$response, $status);
 	case 401:

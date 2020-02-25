@@ -222,7 +222,7 @@ return $r;
  */
 private Function colorMapReverse($c)
 {
-slog('Color reverse mapping', $c);
+//slog('Color reverse mapping', $c);
 if (array_key_exists($c, $this->comapr))
 	return $this->comapr[$c]['cid'];
 slog('Color ID not found in map', $c);
@@ -270,6 +270,40 @@ public Function setUsageMap(array &$m)
 {
 $this->umap=$m;
 $this->umapr=array_flip($m);
+}
+
+protected Function categorySubMapReverse($pc, array $sc)
+{
+if (!array_key_exists($pc, $this->cmap)) {
+	//slog("Category is missing from map", $pc);
+	return '';
+}
+$scm=$this->cmap[$pc];
+if (!array_key_exists('subcategories', $scm)) {
+	//slog("Category has no subcategories", $pc);
+	return '';
+}
+if (!array_key_exists('tids', $scm)) {
+	//slog("Category is missing parent TIDS", $pc);
+	return '';
+}
+
+$ptids=$scm['tids'];
+
+foreach ($scm['subcategories'] as $sid => $data) {
+	if (!array_key_exists('tids', $data)) {
+		//slog("TIDS are not set for", $sid);
+		continue;
+	}
+
+	// Remove parent tids
+	$tids=array_diff($data['tids'], $ptids);
+	$is=array_uintersect($sc, $tids, "strcasecmp");
+	if (count($is)>0)
+		return $data['id'];
+}
+
+return '';
 }
 
 protected Function categorySubMap($ts)
@@ -538,10 +572,13 @@ $p['status']=$po->status;
 $p['stock']=$po->commerce_stock;
 $p['created']=$po->created;
 $p['category']=$this->categoryMap($po->type);
-$p['subcategory']=$this->categorySubMap($po->type);
 
 if (property_exists($po, "field_body")) {
 	$p['description']=$po->field_body;
+}
+
+if (property_exists($po, "field_category")) {
+	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_category);
 }
 
 // Storage location/warehouse

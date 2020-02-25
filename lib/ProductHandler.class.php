@@ -31,7 +31,6 @@ $this->c=$config;
 $umap=json_decode(file_get_contents('usagemap.json'), true);
 
 $tmp=$this->getDataFromCache($this->cmap_cache);
-slog("ColorMapCache", $tmp);
 if ($tmp) {
 	$cmap=json_decode($tmp, true);
 	$this->api->setColorMap($cmap);
@@ -511,7 +510,6 @@ $this->checkAuth();
 $tmp=$this->getDataFromCache($this->cmap_cache);
 if ($tmp!==false) {
 	$cmap=json_decode($tmp, true);
-	slog('Got colors from cache', $cmap);
 	return Response::json(200, 'Colors', $cmap);
 }
 

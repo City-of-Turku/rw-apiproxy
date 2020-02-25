@@ -244,11 +244,35 @@ return false;
 
 public Function subCategoryMap($ts, array $r)
 {
-slog('subcategory', $ts);
 $c=$r['category'];
-if (array_key_exists($ts, $this->cmap))
-	return $ts;
-return array();
+
+if (!array_key_exists($c, $this->cmap)) {
+	//slog('Category is missing from map', $c);
+	return array();
+}
+
+$scc=$this->cmap[$c];
+
+if (!array_key_exists('subcategories', $scc)) {
+	//slog('No subcategories for category', $c);
+	return array();
+}
+
+$scc=$scc['subcategories'];
+
+if (!array_key_exists($ts, $scc)) {
+	//slog('SubCategory is missing from map', $ts);
+	return array();
+}
+
+$sc=$scc[$ts];
+
+if (!array_key_exists('tids', $sc)) {
+	//slog("Subcategory is missing tids", $ts);
+	return array();
+}
+
+return $sc['tids'];
 }
 
 public Function setCategoryMap(array &$m)

@@ -193,8 +193,10 @@ public Function browse($page=1)
 $this->checkAuth();
 
 $r=Flight::request()->query;
+// Show only products that are enabled and in stock
 $filter=array(
-	'commerce_stock'=>array(0, '>')
+	'status'=>array(1, '='),
+	'stock'=>array(0, '>')
 );
 $req=new Request($r);
 

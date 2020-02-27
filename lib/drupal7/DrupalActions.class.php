@@ -588,22 +588,30 @@ return $p;
 protected Function drupalJSONtoProduct(stdClass $po)
 {
 $p=array();
+
+// The commerce product attributes that are always available, just use them directly.
 $p['id']=$po->product_id;
 $p['uid']=$po->uid;
 $p['barcode']=$po->sku;
 $p['title']=$po->title;
 $p['status']=$po->status;
-$p['stock']=$po->commerce_stock;
 $p['created']=$po->created;
 $p['modified']=$po->changed;
 $p['category']=$this->categoryMap($po->type);
 
+// Handle optional extra fields
 if (property_exists($po, "field_body")) {
 	$p['description']=$po->field_body;
 }
 
 if (property_exists($po, "field_category")) {
 	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_category);
+}
+
+if (property_exists($po, "commerce_stock")) {
+	$p['stock']=$po->commerce_stock;
+} else {
+	$p['stock']=null;
 }
 
 // Storage location/warehouse
@@ -686,6 +694,9 @@ return $p;
 
 public function index_products($page=0, $pagesize=20, array $filter=null, array $sortby=null)
 {
+// Re-write common stock to commerce stock
+if (array_key_exists('stock', $filter))
+	$filter['commerce_stock']=$filter['stock'];
 $data=$this->d->index_products($page, $pagesize, null, $filter, $sortby);
 $ps=array();
 foreach ($data as $po) {

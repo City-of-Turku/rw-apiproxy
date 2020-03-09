@@ -585,7 +585,16 @@ foreach ($images as $img) {
 return $p;
 }
 
-protected Function drupalJSONtoProduct(stdClass $po)
+protected function extract_price(stdClass $cp)
+{
+if (property_exists($cp, "amount") && property_exists($cp, "currency_code")) {
+	return $cp->amount/1000;
+}
+
+return null;
+}
+
+protected function drupalJSONtoProduct(stdClass $po)
 {
 $p=array();
 
@@ -599,10 +608,15 @@ $p['created']=$po->created;
 $p['modified']=$po->changed;
 $p['category']=$this->categoryMap($po->type);
 
+if (property_exists($po, "commerce_price") && is_object($po->commerce_price)) {
+	$p['price']=$this->extract_price($po->commerce_price); // XXX should be EUR!
+}
+
 // Handle optional extra fields
 if (property_exists($po, "field_body")) {
 	$p['description']=$po->field_body;
 }
+
 
 if (property_exists($po, "field_category")) {
 	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_category);

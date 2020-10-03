@@ -383,7 +383,20 @@ $t=$this->d->retrieve_resource('colors', true);
 $r=array();
 foreach ($t as $c) {
 	$cid=$c['apicode'];
-	$r[$cid]=array('cid'=>$cid, 'tid'=>$c['tid'], 'code'=>$c['rgb'], 'color'=>$c['name']);
+
+	if (empty($cid))
+		continue;
+
+	// In case the API gives invalid or has missing entries for stuff
+	try {
+		$r[$cid]=array(
+			'cid'=>$cid,
+			'tid'=>$c['tid'],
+			'code'=>$c['rgb'],
+			'color'=>$c['name']);
+	} catch (Exception $e) {
+		slog('Invalid color data', $c, $e);
+	}
 }
 
 return $r;

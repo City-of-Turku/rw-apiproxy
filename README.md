@@ -10,17 +10,17 @@ specific API details so that the backend can be changed to some other system or 
 changes to the client software itself. 
 
 Supports:
-* Drupal 7 Commerce
-* Prestashop
+* Drupal 7 Commerce using Services API
+* Prestashop (needs testing)
 
 This is to be used together with the rw-client application, also available on github at:
 * https://github.com/City-of-Turku/rw-client
 
 ## Requirements
 
-* PHP 5.4 or greater.
+* PHP 7.0 or greater.
 
-The proxy is self-contained and does not depend on any Drupal or other external code.
+The proxy is self-contained and does not depend on any external code.
 
 ## Supported backends
 
@@ -38,9 +38,9 @@ Uses the Prestashop API and because of API limitations also requires direct acce
 Make a copy of config.ini.sample to config.ini and modify service endpoints, set any required API keys
 and choose a backend to use. See config.ini.sample for details.
 
-## Client keys
+## Client key
 A client application must have a API key to indentify it. This key is a random string and must be provided in the http request
-header 'xxx' and must be sent with every request.
+header 'HTTP_X_AUTHENTICATIONKEY' and must be sent with every request. If the key is invalid or missing all request will be denied.
 
 ### Client keys configuration
 
@@ -66,8 +66,7 @@ Example PostgreSQL setup:
  createdb --encoding=UTF8 --owner=rv4api rv4api
 
 ## Responses
-All response bodies are in JSON format. 
-HTTP error codes are used to report success and failure.
+All response bodies are in JSON and HTTP error codes are used to report success and failure accordingly.
 
 ### JSON API Response format
 

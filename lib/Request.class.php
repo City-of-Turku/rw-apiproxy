@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Request handling helpers
+ *
+ * @package Utility
+ */
 class Request
 {
 private $d;

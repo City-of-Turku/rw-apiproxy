@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Location endpoint handler
+ *
+ * @package Handler
+ */
 class LocationHandler extends Handler
 {
 

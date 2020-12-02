@@ -8,8 +8,9 @@
  *
  * All code is released under the GNU General Public License.
  *
- * Uses the Flight micro-framework, http://flightphp.com/ , Flight is released under the MIT license.
+ * Uses the Flight micro-framework, @see http://flightphp.com/ , Flight is released under the MIT license.
  *
+ * @package RestAPI
  */
 
 date_default_timezone_set('Europe/Helsinki');
@@ -80,7 +81,11 @@ function versionResponse() {
 Flight::route('GET /', 'versionResponse');
 Flight::route('GET /version', 'versionResponse');
 
-// Authentication & current user
+/**
+ * Authentication & current user
+ *
+ * @package RestAPI
+ */
 Flight::route('POST /auth/login', array($l, 'login'));
 Flight::route('POST /auth/logout', array($l, 'logout'));
 Flight::route('GET /auth/user', array($l, 'userCurrent'));
@@ -88,22 +93,33 @@ Flight::route('GET /auth/user', array($l, 'userCurrent'));
 // User information
 Flight::route('GET /users/@id:[0-9]{1,6}', array($l, 'user'));
 
-// Product related requests
+/**
+ * Product requests
+ */
 Flight::route('GET /products/barcode/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'getProduct'));
 Flight::route('GET /products/@page:[0-9]{1,4}', array($p, 'browse'));
 Flight::route('GET /products', array($p, 'browse'));
 
-// Product images, path is not under products as the reference is a file identifier, not product
+/**
+ * Product images, path is not under products as the reference is a file identifier, not product
+ */
 Flight::route('GET /images/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage'));
 
+/**
+ * Product creation and updating requests
+ */
 Flight::route('POST /products', array($p, 'add'));
 Flight::route('PUT /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
 Flight::route('DELETE /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'delete'));
 
-// App download
+/**
+ * Android app download
+ */
 Flight::route('GET /download/@apk', array($app, 'download'));
 
-// Orders
+/**
+ * Orders requests
+ */
 Flight::route('GET /orders', array($order, 'orders'));
 Flight::route('GET /orders/@status', array($order, 'orders'));
 Flight::route('GET /orders/@order', array($order, 'order'));
@@ -111,17 +127,24 @@ Flight::route('POST /orders', array($order, 'create'));
 
 Flight::route('POST /orders/@oid:[0-9]{1,5}/status', array($order, 'setStatus'));
 
+/**
+ * Shopping cart requests
+ */
 Flight::route('GET /cart', array($order, 'cart'));
 Flight::route('POST /cart', array($order, 'clearCart')); // XXX Delete ?
 Flight::route('POST /cart/item', array($order, 'addProduct'));
 Flight::route('POST /cart/checkout', array($order, 'checkout'));
 
-// Metadata endpoints
+/**
+ * Metadata endpoints
+ */
 Flight::route('GET /locations', array($loc, 'locations'));
 Flight::route('GET /categories', array($p, 'categories'));
 Flight::route('GET /colors', array($p, 'colors'));
 
-// RSS News feed endpoint
+/**
+ * Site news feed endpoint
+ */
 Flight::route('GET /news', array($news, 'newsFeed'));
 
 Flight::map('notFound', function() {

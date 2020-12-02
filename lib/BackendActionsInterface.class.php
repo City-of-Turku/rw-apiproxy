@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Backend interface
+ *
+ * @package Backend
+ */
 abstract class BackendActionsInterface
 {
 protected $token;

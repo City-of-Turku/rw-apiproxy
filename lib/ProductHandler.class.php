@@ -6,6 +6,8 @@ class ProductNotFoundException extends Exception {}
 
 /**
  * Handle product related requests.
+ *
+ * @package Handler
  */
 class ProductHandler extends Handler
 {

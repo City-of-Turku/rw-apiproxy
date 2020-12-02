@@ -5,6 +5,11 @@ class OrderNotFoundException extends OrderException {}
 class OrderCartIsEmptyException extends OrderException {}
 class OrderOutOfStockException extends OrderException {}
 
+/**
+ * Order endpoint handler
+ *
+ * @package Handler
+ */
 class OrderHandler extends Handler
 {
 private $validStatus=array("canceled", "pending", "processing", "completed");

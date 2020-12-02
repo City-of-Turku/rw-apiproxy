@@ -1,6 +1,13 @@
 <?php
 require_once('DrupalServiceAPIClient.class.php');
 
+/**
+ * Drupal backend actions
+ *
+ * Drupal backend actions for Drupal 7 and Drupal Commerce using service API.
+ *
+ * @package Backend\Drupal
+ */
 class DrupalActions extends BackendActionsInterface
 {
 private $d;

@@ -1,4 +1,7 @@
 <?php
+/**
+ * Product information base class
+ */
 class Product
 {
 public $id=null;

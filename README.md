@@ -65,6 +65,9 @@ Example PostgreSQL setup:
  createuser --pwprompt --encrypted --no-createrole --no-createdb rv4api
  createdb --encoding=UTF8 --owner=rv4api rv4api
 
+You can generate suitable keys with openssl:
+ openssl rand -hex 64
+
 ## Responses
 All response bodies are in JSON and HTTP error codes are used to report success and failure accordingly.
 

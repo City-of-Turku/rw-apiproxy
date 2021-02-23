@@ -1,8 +1,11 @@
 <?php
 
-class ProductErrorException extends Exception {}
-class ProductImageException extends Exception {}
-class ProductNotFoundException extends Exception {}
+class ProductException extends Exception {}
+class ProductErrorException extends ProductException {}
+class ProductDataException extends ProductException {}
+class ProductImageException extends ProductException {}
+class ProductNotFoundException extends ProductException {}
+class ProductExistsException extends ProductException {}
 
 /**
  * Handle product related requests.
@@ -30,7 +33,6 @@ $this->c=$config;
 $umap=json_decode(file_get_contents('usagemap.json'), true);
 
 $tmp=$this->getDataFromCache($this->cmap_cache);
-slog("ColorMapCache", $tmp);
 if ($tmp) {
 	$cmap=json_decode($tmp, true);
 	$this->api->setColorMap($cmap);
@@ -193,8 +195,10 @@ public Function browse($page=1)
 $this->checkAuth();
 
 $r=Flight::request()->query;
+// Show only products that are enabled and in stock
 $filter=array(
-	'commerce_stock'=>array(0, '>')
+	'status'=>array(1, '='),
+	'stock'=>array(0, '>')
 );
 $req=new Request($r);
 
@@ -258,7 +262,7 @@ $ps=array();
 try {
 	$ps=$this->api->index_products($ip, $a, $filter, $sortby);
 } catch (Exception $e) {
-	slog('browseProduct', false, $e);
+	slog('browseProduct', false, $e, true);
 	Response::json(500, 'Data load failed', array('line'=>$e->getLine(), 'error'=>$e->getMessage()));
 	return false;
 }
@@ -439,43 +443,46 @@ try {
 	}
 	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
 	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
-} catch (Exception $e) {
-	// XXX: Handle errors properly
-	$data=array('error'=>$e->getMessage());
+} catch (ProductExistsException $e) {
+	slog('SKU already exists', false);
+	Response::json(409, 'SKU already exists', array('error'=>$e->getMessage()));
+} catch (ProductException $e) {
 	slog('Invalid product data', false, $e);
-	Response::json(400, 'Invalid product data', $data);
+	Response::json(400, 'Invalid product data', array('error'=>$e->getMessage()));
 }
 
 }
 
-public Function update()
+public Function update($barcode)
 {
 $this->checkAuth();
 
-Response::json(500, 'Update not implemented');
+if (!$this->api->validateBarcode($barcode)) {
+	Response::json(400, 'Invalid product barcode');
+	return false;
 }
 
-protected Function get_product_from_response($data)
-{
-if (!is_object($data))
-	return false;
-// Services API returns a stupid object with product id as a property. Not very convinient that.
-$prod=array_pop(get_object_vars($data));
-if (!is_object($prod))
-	return false;
-return $prod;
+$data=Flight::request()->data->getData();
+
+try {
+	$r=$this->api->update_product($barcode, $data);
+	Response::json(200, 'Product update', array("response"=>$r));
+} catch (ProductException $e) {
+	$data=array('error'=>$e->getMessage());
+	slog('Invalid product data for update', $data, $e);
+	Response::json(400, 'Invalid product data for update', $data);
+}
+
 }
 
 protected Function get_by_id($pid)
 {
-$data=$this->api->get_product($pid);
-return $this->get_product_from_response($data);
+return $this->api->get_product($pid);
 }
 
 protected Function get_by_sku($sku)
 {
-$data=$this->api->get_product_by_sku($sku);
-return $this->get_product_from_response($data);
+return $this->api->get_product_by_sku($sku);
 }
 
 public Function stockUpdate()
@@ -507,7 +514,6 @@ $this->checkAuth();
 $tmp=$this->getDataFromCache($this->cmap_cache);
 if ($tmp!==false) {
 	$cmap=json_decode($tmp, true);
-	slog('Got colors from cache', $cmap);
 	return Response::json(200, 'Colors', $cmap);
 }
 

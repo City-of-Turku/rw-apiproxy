@@ -27,13 +27,6 @@ require('lib/Product.class.php');
 require('lib/Request.class.php');
 require('lib/BackendActionsInterface.class.php');
 
-// Drupal backend API
-require('lib/drupal/DrupalServiceAPIClient.class.php');
-require('lib/drupal/DrupalActions.class.php');
-
-// Prestashop backend API
-require('lib/prestashop/PrestashopActions.class.php');
-
 // Handlers
 require('lib/Response.class.php');
 require('lib/Handler.class.php');
@@ -54,11 +47,17 @@ $api=$config['Generic'];
 $appdata=$config['MobileApp'];
 
 switch ($api['backend']) {
+	case 'drupal7':
 	case 'drupal':
+		require('lib/drupal7/DrupalServiceAPIClient.class.php');
+		require('lib/drupal7/DrupalActions.class.php');
+
 		$bc=$config['Drupal'];
 		$be=new DrupalActions($api, $bc);
 	break;
 	case 'prestashop':
+		require('lib/prestashop/PrestashopActions.class.php');
+
 		$bc=$config['Prestashop'];
 		$be=new PrestashopActions($api, $bc);
 	break;
@@ -109,7 +108,7 @@ Flight::route('GET /images/@style/@fid:[0-9]{1,5}', array($p, 'getProductImage')
  * Product creation and updating requests
  */
 Flight::route('POST /products', array($p, 'add'));
-Flight::route('PUT /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
+Flight::route('POST /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'update'));
 Flight::route('DELETE /products/@barcode:[A-Z]{3}[0-9]{6,9}', array($p, 'delete'));
 
 /**
@@ -158,7 +157,7 @@ Flight::map('error', function($e) {
 	}
 	$c=$e->getCode();
 	if ($c<400) $c=500;
-	slog("Internal error", $e->getMessage(), $e);
+	slog("Internal error exception", $e->getMessage(), $e, true);
 	Response::json($c, "Internal system error");
 });
 

@@ -92,6 +92,12 @@ $this->map=array(
 	'min_value'=>0,
 	'max_value'=>99999
 	),
+ 'field_category'=>array(
+	'id'=>'subcategory',
+	'required'=>false,
+	'type'=>'string',
+	'cb_map'=>'subCategoryMap'
+	),
  'field_varasto'=>array(
 	'id'=>'location',
 	'required'=>true,
@@ -205,12 +211,17 @@ if (!is_array($c))
 
 $r=array();
 foreach ($c as $cid) {
-	if (array_key_exists($cid, $this->comap))
+	if ($cid=='')
+		continue;
+	if (array_key_exists($cid, $this->comap)) {
 		$r[]=$this->comap[$cid]['tid'];
-	else
+	} else {
+		// XXX: Log it only, don't fail
 		slog('Color string not found in map', $cid);
+	}
 }
-return count($r)>0 ? $r : false;
+// Empty array is not an error, just means no color is set
+return $r;
 }
 
 /**
@@ -218,7 +229,7 @@ return count($r)>0 ? $r : false;
  */
 private Function colorMapReverse($c)
 {
-slog('Color reverse mapping', $c);
+//slog('Color reverse mapping', $c);
 if (array_key_exists($c, $this->comapr))
 	return $this->comapr[$c]['cid'];
 slog('Color ID not found in map', $c);
@@ -236,6 +247,39 @@ public Function categoryMap($ts)
 if (array_key_exists($ts, $this->cmap))
 	return $ts;
 return false;
+}
+
+public Function subCategoryMap($ts, array $r)
+{
+$c=$r['category'];
+
+if (!array_key_exists($c, $this->cmap)) {
+	//slog('Category is missing from map', $c);
+	return array();
+}
+
+$scc=$this->cmap[$c];
+
+if (!array_key_exists('subcategories', $scc)) {
+	//slog('No subcategories for category', $c);
+	return array();
+}
+
+$scc=$scc['subcategories'];
+
+if (!array_key_exists($ts, $scc)) {
+	//slog('SubCategory is missing from map', $ts);
+	return array();
+}
+
+$sc=$scc[$ts];
+
+if (!array_key_exists('tids', $sc)) {
+	//slog("Subcategory is missing tids", $ts);
+	return array();
+}
+
+return $sc['tids'];
 }
 
 public Function setCategoryMap(array &$m)
@@ -257,6 +301,40 @@ public Function setUsageMap(array &$m)
 {
 $this->umap=$m;
 $this->umapr=array_flip($m);
+}
+
+protected Function categorySubMapReverse($pc, array $sc)
+{
+if (!array_key_exists($pc, $this->cmap)) {
+	//slog("Category is missing from map", $pc);
+	return '';
+}
+$scm=$this->cmap[$pc];
+if (!array_key_exists('subcategories', $scm)) {
+	//slog("Category has no subcategories", $pc);
+	return '';
+}
+if (!array_key_exists('tids', $scm)) {
+	//slog("Category is missing parent TIDS", $pc);
+	return '';
+}
+
+$ptids=$scm['tids'];
+
+foreach ($scm['subcategories'] as $sid => $data) {
+	if (!array_key_exists('tids', $data)) {
+		//slog("TIDS are not set for", $sid);
+		continue;
+	}
+
+	// Remove parent tids
+	$tids=array_diff($data['tids'], $ptids);
+	$is=array_uintersect($sc, $tids, "strcasecmp");
+	if (count($is)>0)
+		return $data['id'];
+}
+
+return '';
 }
 
 protected Function categorySubMap($ts)
@@ -286,8 +364,6 @@ if ($this->uid<1) {
         slog('Invalid user id', $this->uid);
 	return false;
 }
-
-slog('User data', json_encode($s));
 
 $this->session_id=$s[0];
 $this->session_name=$s[1];
@@ -444,37 +520,61 @@ $er=array();
 $f=$this->mapRequest($data, $er);
 
 if (count($er)>0) {
-        $data=array('errors'=>$er);
-        $data['f']=$f;
-        slog('Invalid drupal product data', json_encode($er));
-	throw new ProductErrorException('Invalid product data for Drupal Commerce', 400);
+	slog('Invalid product data for add', array('errors'=>$er,'f'=>$f));
+	throw new ProductErrorException('Invalid product data for add', 400);
 }
 
 $fer=array();
 $images=array();
 if (count($files)>0) {
-        $fids=$this->addImagesFromUpload($files, $fer);
-        foreach ($fids as $fid) {
-                $images[]=array('fid'=>$fid);
-        }
-        $f['field_image']=$images;
+	$fids=$this->addImagesFromUpload($files, $fer);
+	foreach ($fids as $fid) {
+		$images[]=array('fid'=>$fid);
+	}
+	$f['field_image']=$images;
 } else {
-        slog('No images given for product');
+	slog('No images given for product');
 	throw new ProductImageException('Product image(s) are required', 400);
 }
 
 // XXX: Client supports this now so... fix it!
 $price=0;
-$r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
-slog('Product added', $f);
-//throw new ProductErrorException('DevelException', 400);
-return true;
+try {
+	$r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
+	//throw new ProductErrorException('DevelException', 400);
+	return $this->drupalJSONtoProduct($r);
+} catch (DrupalServiceConflictException $e) {
+	throw new ProductExistsException('Product SKU already exists', 409, $e);
+}
 }
 
 // Products
 public function create_product($type, $sku, $title, $price, array $f)
 {
 return $this->d->create_product($type, $sku, $title, $price, $f);
+}
+
+public function update_product($sku, array $data)
+{
+$er=array();
+
+// xxx, this is bit hacky but whatever, make mapper happy
+$data['barcode']=$sku;
+$f=$this->mapRequest($data, $er);
+
+if (count($er)>0) {
+	slog('Invalid drupal product data for update', array('errors'=>$er,'f'=>$f));
+	throw new ProductErrorException('Invalid product data for update', 400);
+}
+
+// Set revision log message
+$f['log']='API made modification';
+
+// Remove fields that can not be changed but that mapper needs for validation
+unset($f['sku']);
+unset($f['type']);
+
+return $this->drupalJSONtoProduct($this->d->update_product_by_sku($sku, $f));
 }
 
 protected Function setProductImage(stdClass $image, $style)
@@ -492,33 +592,67 @@ foreach ($images as $img) {
         // Check that response is valid
         if (!is_object($img))
                 continue;
-        // Check that it is indeed an image
-        if ($img->type!='image')
-                continue;
+
+	// Product add response image data is incomplete, don't check type as it is missing
+	if (property_exists($img, "type")) {
+	        // Check that it is indeed an image
+        	if ($img->type!='image')
+                	continue;
+	}
 
         $p[]=sprintf('%s/images/%s/%d', $api['api_base_url'], $style, $img->fid);
 }
 return $p;
 }
 
-protected Function drupalJSONtoProduct(stdClass $po)
+protected function extract_price(stdClass $cp)
+{
+if (property_exists($cp, "amount") && property_exists($cp, "currency_code")) {
+	return $cp->amount/1000;
+}
+
+return null;
+}
+
+protected function drupalJSONtoProduct(stdClass $po)
 {
 $p=array();
+
+// The commerce product attributes that are always available, just use them directly.
 $p['id']=$po->product_id;
 $p['uid']=$po->uid;
 $p['barcode']=$po->sku;
 $p['title']=$po->title;
 $p['status']=$po->status;
-$p['stock']=$po->commerce_stock;
 $p['created']=$po->created;
+$p['modified']=$po->changed;
 $p['category']=$this->categoryMap($po->type);
-$p['subcategory']=$this->categorySubMap($po->type);
-// Check for a body field!
-$p['description']=$po->title; // XXX
+
+if (property_exists($po, "commerce_price") && is_object($po->commerce_price)) {
+	$p['price']=$this->extract_price($po->commerce_price); // XXX should be EUR!
+}
+
+// Handle optional extra fields
+if (property_exists($po, "field_body")) {
+	$p['description']=$po->field_body;
+}
+
+
+if (property_exists($po, "field_category")) {
+	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_category);
+}
+
+if (property_exists($po, "commerce_stock")) {
+	$p['stock']=$po->commerce_stock;
+} else {
+	$p['stock']=null;
+}
 
 // Storage location/warehouse
-if (property_exists($po, "field_location")) {
-	$p['location']=$po->field_location;
+if (property_exists($po, "field_varasto")) {
+	$p['location']=$po->field_varasto;
+} else {
+	$p['location']=0; // "Undefined location"
 }
 if (property_exists($po, "field_location_detail")) {
 	$p['locationdetail']=$po->field_location_detail;
@@ -568,8 +702,6 @@ if (property_exists($po, "field_koko") && is_object($po->field_koko)) {
 if (property_exists($po, "field_purpose")) {
 	// XXX: Values need to be mapped!!!
 	$p['purpose']=$this->purposeMapReverse($po->field_purpose);
-} else {
-	$p['purpose']=0;
 }
 
 // Simple text properties, XXX simplify handling
@@ -596,6 +728,9 @@ return $p;
 
 public function index_products($page=0, $pagesize=20, array $filter=null, array $sortby=null)
 {
+// Re-write common stock to commerce stock
+if (array_key_exists('stock', $filter))
+	$filter['commerce_stock']=$filter['stock'];
 $data=$this->d->index_products($page, $pagesize, null, $filter, $sortby);
 $ps=array();
 foreach ($data as $po) {
@@ -607,17 +742,17 @@ return $ps;
 
 public function get_product($id)
 {
-return $this->d->get_product($id);
+$data=$this->d->get_product($id);
+return $this->d->get_product_from_response($data);
 }
 
 public function get_product_by_sku($sku)
 {
 $r=$this->d->get_product_by_sku($sku);
-
 if (is_array($r) && count($r)===0)
-	throw new ProductNotFoundException("Not product with requested SKU", 404);
+	throw new ProductNotFoundException("No product with requested SKU", 404);
 
-return $r;
+return $this->d->get_product_from_response($r);
 }
 
 protected function lineItemToOrderItem(stdClass $pr)
@@ -823,7 +958,7 @@ switch ($type) {
 			$v=explode($o['separator'], $v);
 		}
 		if (isset($o['cb_map'])) {
-			$v=call_user_func(array($this, $o['cb_map']), $v);
+			$v=call_user_func(array($this, $o['cb_map']), $v, $r);
 			if ($v===false) {
 				$er[$id]='Invalid value given, not found in map';
 				return false;
@@ -849,7 +984,7 @@ switch ($type) {
 		else if (isset($o['min_value']) && $v<$o['min_value'])
 			$er[$id]='Value too small: '.$v;
 		if (isset($o['cb_map'])) {
-			$v=call_user_func(array($this, $o['cb_map']), $v);
+			$v=call_user_func(array($this, $o['cb_map']), $v, $r);
 			if ($v===false) {
 				$er[$id]='Invalid value given, not found in map';
 				return false;
@@ -869,6 +1004,13 @@ switch ($type) {
 		$v=(int)$v;
 		if ($v<1)
 			$er[$id]='Node reference must be positive.';
+	break;
+	case 'taxonomyid':
+		if (!is_numeric($v))
+			$er[$id]='Taxonomy reference must be a number.';
+		$v=(int)$v;
+		if ($v<1)
+			$er[$id]='Taxonomy reference must be positive.';
 	break;
 	default:
 		$er[$id]='Unknown type. Invalid contents';

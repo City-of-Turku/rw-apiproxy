@@ -4,6 +4,8 @@
  *
  * Common setup for most request handlers.
  * Includes frequently used helper methods.
+ *
+ * @package Handler
  */
 
 class Handler

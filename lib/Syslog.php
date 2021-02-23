@@ -1,4 +1,9 @@
 <?php
+/**
+ * Global syslog helper
+ *
+ * @package Utility\Syslog
+ */
 // XXX We would like to have Throwable/Exception $e but we need to be PHP 5 compatible so for now...
 function slog($er, $data='', $e=null, $trace=false)
 {

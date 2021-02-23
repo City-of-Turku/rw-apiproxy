@@ -1,6 +1,11 @@
 <?php
 require_once('PSWebServiceLibrary.php');
 
+/**
+ * Prestashop backend actions
+ *
+ * @package Backend\Prestashop
+ */
 class PrestashopActions extends BackendActionsInterface
 {
 protected $pws;

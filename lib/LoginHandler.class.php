@@ -6,6 +6,7 @@ class AuthenticationException extends Exception {}
 /**
  * Handle user authentication to services
  *
+ * @package Handler
  */
 class LoginHandler Extends Handler
 {

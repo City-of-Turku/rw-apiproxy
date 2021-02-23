@@ -1,6 +1,4 @@
 <?php
-
-// Helper function
 if(!function_exists('hash_equals')) {
   function hash_equals($str1, $str2) {
     if(strlen($str1) != strlen($str2)) {
@@ -18,6 +16,11 @@ if(!function_exists('hash_equals')) {
 if (!defined('OPENSSL_RAW_DATA'))
  define('OPENSSL_RAW_DATA', 1);
 
+/**
+ * AES Encryption/Decryption helper class
+ *
+ * @package Utility\AES
+ */
 class AES
 {
 private $key;

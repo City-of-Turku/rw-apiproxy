@@ -9,6 +9,8 @@ class ProductExistsException extends ProductException {}
 
 /**
  * Handle product related requests.
+ *
+ * @package Handler
  */
 class ProductHandler extends Handler
 {

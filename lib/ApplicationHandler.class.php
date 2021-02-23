@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Handler for mobile application apk download requests
+ *
+ * @package Handler
+ */
 class ApplicationHandler extends Handler
 {
 

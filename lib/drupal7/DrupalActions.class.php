@@ -92,7 +92,7 @@ $this->map=array(
 	'min_value'=>0,
 	'max_value'=>99999
 	),
- 'field_category'=>array(
+ 'field_kategoria'=>array(
 	'id'=>'subcategory',
 	'required'=>false,
 	'type'=>'string',
@@ -637,9 +637,8 @@ if (property_exists($po, "field_body")) {
 	$p['description']=$po->field_body;
 }
 
-
-if (property_exists($po, "field_category")) {
-	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_category);
+if (property_exists($po, "field_kategoria")) {
+	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_kategoria);
 }
 
 if (property_exists($po, "commerce_stock")) {

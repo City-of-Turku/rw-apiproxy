@@ -1,5 +1,6 @@
 {
 "authenticated user": ["product", "order"],
+"administrator": ["product", "products", "order","orders"],
 "orderhandler": ["orders"],
 "producthandler": ["products"],
 "warehouse": []

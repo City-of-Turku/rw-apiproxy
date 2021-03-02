@@ -641,18 +641,11 @@ if (property_exists($po, "field_kategoria")) {
 	$p['subcategory']=$this->categorySubMapReverse($po->type, $po->field_kategoria);
 }
 
-if (property_exists($po, "commerce_stock")) {
-	$p['stock']=$po->commerce_stock;
-} else {
-	$p['stock']=null;
-}
+$p['stock']=property_exists($po, "commerce_stock") ? $po->commerce_stock : null;
 
 // Storage location/warehouse
-if (property_exists($po, "field_varasto")) {
-	$p['location']=$po->field_varasto;
-} else {
-	$p['location']=0; // "Undefined location"
-}
+$p['location']=property_exists($po, "field_varasto") ? $po->field_varasto : 0; // "Undefined location"
+
 if (property_exists($po, "field_location_detail")) {
 	$p['locationdetail']=$po->field_location_detail;
 }
@@ -716,7 +709,6 @@ if (property_exists($po, "field_model")) {
 if (property_exists($po, "field_manufacturer")) {
 	$p['manufacturer']=$po->field_manufacturer;
 }
-
 
 return $p;
 }

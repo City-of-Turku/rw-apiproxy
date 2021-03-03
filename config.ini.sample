@@ -6,8 +6,6 @@ backend=
 
 [Drupal]
 url=http://localhost/d7/api/v3
-image_public_base=http://localhost/d7/
-image_private_base=http://localhost/d7/system
 hmac_key='zxcvbdummy'
 key='qwertydummy'
 apikey_dsn="pgsql:host=localhost;dbname=rwapidb"

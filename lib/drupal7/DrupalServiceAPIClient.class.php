@@ -652,6 +652,46 @@ $r=array(
 return json_decode($this->executePOST('line-item.json', json_encode($r)));
 }
 
+public function remove_from_cart_by_sku($sku)
+{
+if (!$this->validate_product_sku($sku))
+	throw new DrupalServiceException('Invalid product SKU', 500);
+
+// The client should not need to deal with internal IDs and such details, and we deal with SKUs only.
+// Unfortunately the Drupal api does not use SKU but line items, so jump around some hoops to get the ID from the SKU.
+
+$data=$this->index_cart();
+
+$cart=null;
+// Loop over the "one" property that is a number
+foreach ($data as $c) {
+	$cart=$c;
+}
+
+if (!is_object($cart))
+	throw new DrupalServiceException('Failed to query user cart', 500);
+
+if ($cart->status!=='cart')
+	throw new DrupalServiceException('Failed to query user cart', 500);
+
+$pid=false;
+if (property_exists($cart, "commerce_line_items_entities")) {
+	foreach ($cart->commerce_line_items_entities as $id=>$pr) {
+		if ($pr->type!=='product')
+			continue;		
+		if ($pr->line_item_label===$sku) {
+			$pid=$id;
+			break;
+		}
+	}
+}
+
+if ($pid!==false)
+	return json_decode($this->executeDELETE(sprintf('line-item/%d.json', $pid)));
+
+return false;
+}
+
 public function add_to_order_by_product_id($order_id, $product_id, $quantity=1)
 {
 if ($order_id<1 || !is_numeric($order_id))

@@ -131,7 +131,11 @@ $q=$r->getInt("quantity");
 
 slog("Cart", Flight::request()->data);
 
-Response::json(200, 'Cart', $this->be->add_to_cart($sku, $q));
+if ($q===-1) {
+	Response::json(200, 'RemoveFromCart', $this->be->remove_from_cart($sku));
+} else {
+	Response::json(200, 'AddToCart', $this->be->add_to_cart($sku, $q));
+}
 }
 
 public function checkout()

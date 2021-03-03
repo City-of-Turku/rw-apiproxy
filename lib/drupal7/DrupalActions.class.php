@@ -65,6 +65,9 @@ if (isset($config['api_username']) && $config['api_password'])
 // Drupal role to client role
 $this->rolemap=json_decode(file_get_contents('drupal-rolesmap.json'), true);
 
+// Category map
+$this->categorymap=json_decode(file_get_contents('categorymap.json'), true);
+
 // Client API to Drupal Product field mapping
 $this->map=array(
  'sku'=>array(
@@ -520,7 +523,7 @@ $er=array();
 $f=$this->mapRequest($data, $er);
 
 if (count($er)>0) {
-	slog('Invalid product data for add', array('errors'=>$er,'f'=>$f));
+	slog('Invalid product data for add', array('errors'=>$er, 'f'=>$f, 'data'=>$data));
 	throw new ProductErrorException('Invalid product data for add', 400);
 }
 
@@ -563,7 +566,7 @@ $data['barcode']=$sku;
 $f=$this->mapRequest($data, $er);
 
 if (count($er)>0) {
-	slog('Invalid drupal product data for update', array('errors'=>$er,'f'=>$f));
+	slog('Invalid drupal product data for update', array('errors'=>$er, 'f'=>$f, 'data'=>$data));
 	throw new ProductErrorException('Invalid product data for update', 400);
 }
 
@@ -772,8 +775,10 @@ $p['user']=(int)$o->uid;
 $p['created']=(int)$o->created;
 $p['changed']=(int)$o->changed;
 
-$p['amount']=(int)$o->commerce_order_total->amount;
-$p['currency']=$o->commerce_order_total->currency_code;
+if (property_exists($o, "commerce_order_total") && is_object($o->commerce_order_total)) {
+	$p['amount']=(int)$o->commerce_order_total->amount;
+	$p['currency']=$o->commerce_order_total->currency_code;
+}
 
 // Get the ID numbers
 $billing_id=$o->commerce_customer_billing;
@@ -884,6 +889,16 @@ try {
 	throw new OrderNotFoundException("Product not found", 404, $e);
 } catch (DrupalServiceConflictException $e) {
 	throw new OrderOutOfStockException("Product out of stock", 409, $e);
+}
+
+}
+
+public function remove_from_cart($sku)
+{
+try {
+	return $this->d->remove_from_cart_by_sku($sku);
+} catch (DrupalServiceNotFoundException $e) {
+	throw new OrderNotFoundException("Product not found", 404, $e);
 }
 
 }

@@ -683,9 +683,9 @@ if (property_exists($po, "field_vari")) {
 		$p['color'][]=$this->colorMapReverse($po->field_vari);
 	}
 }
-if (property_exists($po, "field_paino")) {
+if (property_exists($po, "field_paino") && is_object($po->field_paino)) {
 	// Always in Kg!
-	$p['size']['weight']=$po->field_paino;
+	$p['size']['weight']=$po->field_paino->weight;
 }
 if (property_exists($po, "field_koko") && is_object($po->field_koko)) {
 	// Always in cm!

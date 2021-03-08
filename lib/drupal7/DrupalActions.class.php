@@ -16,7 +16,7 @@ private $session_id;
 private $session_name;
 private $session_token;
 
-private $api_config;
+private $api;
 private $config;
 
 // Category map
@@ -49,6 +49,9 @@ $this->comap=array();
 $this->comapr=array();
 $this->umap=array();
 $this->umapr=array();
+
+$this->config=$config;
+$this->api=$api;
 
 $this->aes=new AES($config['key'], $config['hmac_key']);
 
@@ -580,30 +583,31 @@ unset($f['type']);
 return $this->drupalJSONtoProduct($this->d->update_product_by_sku($sku, $f));
 }
 
-protected Function setProductImage(stdClass $image, $style)
+protected Function fillProductImages(array $images, $style)
 {
-return $this->setProductImages(array($image), $style);
-}
-
-protected Function setProductImages(array $images, $style)
-{
-// XXX
-global $api;
-
 $p=array();
 foreach ($images as $img) {
         // Check that response is valid
         if (!is_object($img))
                 continue;
 
+	// There are always available
+	$id=array(
+		'width'=>$img->width,
+		'height'=>$img->height,
+		'image'=>sprintf('%s/images/%s/%d', $this->api['api_base_url'], $style, $img->fid)
+	);
+
 	// Product add response image data is incomplete, don't check type as it is missing
 	if (property_exists($img, "type")) {
 	        // Check that it is indeed an image
         	if ($img->type!='image')
                 	continue;
+		$id['mime']=$img->filemime;
+		$id['size']=$img->filesize;
 	}
 
-        $p[]=sprintf('%s/images/%s/%d', $api['api_base_url'], $style, $img->fid);
+        $p[$img->fid]=$id;
 }
 return $p;
 }
@@ -658,18 +662,21 @@ $p['images']=array();
 if (property_exists($po, "field_image")  && !is_null($po->field_image)) {
 	// In case the image field is limited to one, then we get an object direclty, handle this special case
 	$i=false;
-	if (is_object($po->field_image)) {
-		$i=$this->setProductImage($po->field_image, 'normal');
-		$p['images']=$i;
-		$t=$this->setProductImage($po->field_image, 'thumbnail');
-		$p['thumbnail']=$t[0];
+	$fi=$po->field_image;
+	if (is_object($fi)) {
+		$i=$this->fillProductImages(array($fi), 'normal');
 	} else if (is_array($po->field_image)) {
-		$i=$this->setProductImages($po->field_image, 'normal');
-		$p['images']=$i;
-		if (count($i)>0) {
-			$t=$this->setProductImages($po->field_image, 'thumbnail');
-			$p['thumbnail']=$t[0];
-		}
+		$i=$this->fillProductImages($fi, 'normal');
+	}
+	if ($i!==false) {
+		// Keep images as a simple array of image urls so old clients work
+		$imgs=array();
+		array_walk($i, function($v, $k) use (&$imgs) {
+			array_push($imgs, $v['image']);
+		});
+		$p['images']=array_values($imgs);
+		// This contains more details about the image
+		$p['imagesData']=$i;
 	}
 }
 if (property_exists($po, "field_vari")) {

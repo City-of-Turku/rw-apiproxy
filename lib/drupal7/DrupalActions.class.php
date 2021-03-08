@@ -593,6 +593,7 @@ foreach ($images as $img) {
 
 	// There are always available
 	$id=array(
+		'id'=>$img->fid,
 		'width'=>$img->width,
 		'height'=>$img->height,
 		'image'=>sprintf('%s/images/%s/%d', $this->api['api_base_url'], $style, $img->fid)

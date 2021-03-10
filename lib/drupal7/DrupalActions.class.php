@@ -98,6 +98,11 @@ $this->map=array(
 	'min_value'=>0,
 	'max_value'=>99999
 	),
+ 'field_image'=>array(
+	'id'=>'images',
+	'type'=>'image',
+        'ignore'=>true // We handle images separately, but for completness have it here
+        ),
  'field_kategoria'=>array(
 	'id'=>'subcategory',
 	'required'=>false,
@@ -210,15 +215,18 @@ return 0;
 /**
  * Map color as string into a taxonomy ID, this is instance specific.
  */
-private Function colorMap($c)
+private Function colorMap($c, $req, array $p=null)
 {
 if (!is_array($c))
 	$c=array($c);
 
 $r=array();
 foreach ($c as $cid) {
-	if ($cid=='')
+	if ($cid=='') {
+		$r[]=null;
 		continue;
+	}
+
 	if (array_key_exists($cid, $this->comap)) {
 		$r[]=$this->comap[$cid]['tid'];
 	} else {
@@ -226,8 +234,33 @@ foreach ($c as $cid) {
 		slog('Color string not found in map', $cid);
 	}
 }
-// Empty array is not an error, just means no color is set
+
+// Previous data needs to be cleared in case we remove any values
+if (is_array($p)) {
+	$r=$this->modify_data($r, $p);
+}
+
 return $r;
+}
+
+/**
+ * modify_data
+ *
+ * Drupal field with multiple values need to be handled by chaing the value at delta,
+ * so if old data is array(1,2,3) and new would be array(5,6) we need to clear the '3' in the old data
+ * so that we send array(5,6,null) as array(5,6) would only change 1,2 and not clear 3.
+ *
+ */
+private function modify_data(array $ndata, array $odata)
+{
+$nc=count($ndata);
+$oc=count($odata);
+$ct=max($nc,$oc);
+for ($i=0;$i<$ct;$i++) {
+	if (!isset($ndata[$i]))
+		$ndatar[$i]=null;
+}
+return $ndata;
 }
 
 /**
@@ -523,7 +556,7 @@ public function add_product(array $data, array $files)
 $p=array();
 $er=array();
 
-$f=$this->mapRequest($data, $er);
+$f=$this->map_request($data, null, $er);
 
 if (count($er)>0) {
 	slog('Invalid product data for add', array('errors'=>$er, 'f'=>$f, 'data'=>$data));
@@ -535,13 +568,15 @@ $images=array();
 if (count($files)>0) {
 	$fids=$this->addImagesFromUpload($files, $fer);
 	foreach ($fids as $fid) {
-		$images[]=array('fid'=>$fid);
+		$images[]=array('fid'=>$fid, 'alt'=>$f['title']);
 	}
 	$f['field_image']=$images;
 } else {
 	slog('No images given for product');
 	throw new ProductImageException('Product image(s) are required', 400);
 }
+
+$f['log']='API added';
 
 // XXX: Client supports this now so... fix it!
 $price=0;
@@ -560,18 +595,40 @@ public function create_product($type, $sku, $title, $price, array $f)
 return $this->d->create_product($type, $sku, $title, $price, $f);
 }
 
-public function update_product($sku, array $data)
+public function update_product($sku, array $data, array $files=null)
 {
 $er=array();
 
-// xxx, this is bit hacky but whatever, make mapper happy
+// Get the current product by sku now
+$p=$this->get_product_by_sku($sku);
+
 $data['barcode']=$sku;
-$f=$this->mapRequest($data, $er);
+$f=$this->map_request($data, $p, $er);
 
 if (count($er)>0) {
 	slog('Invalid drupal product data for update', array('errors'=>$er, 'f'=>$f, 'data'=>$data));
 	throw new ProductErrorException('Invalid product data for update', 400);
 }
+
+$images=array();
+if (isset($data['imagerm']) && is_array($data['imagerm'])) {
+	slog('ImagesToRemove', $data['imagerm']);
+	foreach ($p->field_image as $oi) {
+		$fid=$oi->fid;
+		if (in_array("$fid", $data['imagerm'], true))
+			$images[]=array('fid'=>null);
+		else
+			$images[]=array('fid'=>(int)$oi->fid);
+	}
+}
+if (is_array($files) && count($files)>0) {
+	$fer=array();
+	$fids=$this->addImagesFromUpload($files, $fer);
+	foreach ($fids as $fid) {
+		$images[]=array('fid'=>$fid, 'alt'=>$f['title']);
+	}
+}
+$f['field_image']=$images;
 
 // Set revision log message
 $f['log']='API made modification';
@@ -580,7 +637,10 @@ $f['log']='API made modification';
 unset($f['sku']);
 unset($f['type']);
 
-return $this->drupalJSONtoProduct($this->d->update_product_by_sku($sku, $f));
+// Save and discard the result, and reload (as the update response is, well, f*d up
+if ($this->d->update_product($p->product_id, $f))
+	return $this->drupalJSONtoProduct($this->d->get_product($p->product_id));
+return false;
 }
 
 protected Function fillProductImages(array $images, $style)
@@ -591,7 +651,7 @@ foreach ($images as $img) {
         if (!is_object($img))
                 continue;
 
-	// There are always available
+	// These are always available
 	$id=array(
 		'id'=>$img->fid,
 		'width'=>$img->width,
@@ -661,7 +721,7 @@ if (property_exists($po, "field_location_detail")) {
 // Images
 $p['images']=array();
 if (property_exists($po, "field_image")  && !is_null($po->field_image)) {
-	// In case the image field is limited to one, then we get an object direclty, handle this special case
+	// In case the image field is limited to one, then we get an object directly, handle this special case
 	$i=false;
 	$fi=$po->field_image;
 	if (is_object($fi)) {
@@ -933,11 +993,17 @@ try {
 }
 
 /**
- * mapVariable
+ * map_variable
  *
- *
+ * Map a request variable to drupal field, according to the mapping details given
+ * 
+ * @r   Request variables
+ * @id  Request field ID
+ * @df  Drupal field id
+ * @o   Drupal field mapping instructions
+ * @er  Error array
  */
-protected Function mapVariable(array &$r, $id, $df, array &$o, array &$er)
+protected Function map_variable(array &$r, $id, $df, array &$o, stdClass $d=null, array &$er)
 {
 // Should we just ignore it
 if (isset($o['ignore']) && $o['ignore']===true)
@@ -961,25 +1027,38 @@ if ($o['required']===false && !isset($r[$id]) && isset($o['default'])) {
 // Check if empty value can be just ignored, or do we need this ?
 //if ($o['required']===false &&
 
+// Check if we need to do something with old data, if so extract the field values into dv
+$dv=null;
+if (is_object($d)) {
+	if (property_exists($d, $df)) {
+		$dv=$d->$df;
+	}
+}
+
 $type=$o['type'];
 switch ($type) {
+	case 'image':
+		slog("Mapping for image not done here, please check field mapping.");
+	break;
 	case 'string':
-		if (!is_string($v))
-			$er[$id]='Invalid contents, not a string: '.$v;
+		if (!is_string($v)) {
+			$er[$id]='Invalid value, not a string.';
+			return false;
+		}
 		$v=trim($v);
 		// Input is string, separated by something, result is array of strings (taxonomy for example)
 		if (isset($o['separator'])) {
 			$v=explode($o['separator'], $v);
 		}
-		if (isset($o['cb_map'])) {
-			$v=call_user_func(array($this, $o['cb_map']), $v, $r);
+		if (isset($o['cb_map'])) {			
+			$v=call_user_func(array($this, $o['cb_map']), $v, $r, $dv);
 			if ($v===false) {
 				$er[$id]='Invalid value given, not found in map';
 				return false;
 			}
 		}
 		if (isset($o['cb_validate'])) {
-			$v=call_user_func(array($this, $o['cb_validate']), $v);
+			$v=call_user_func(array($this, $o['cb_validate']), $v, $r, $dv);
 			if ($v===false) {
 				$er[$id]='Invalid value given, did not validate';
 				return false;
@@ -990,8 +1069,9 @@ switch ($type) {
 		}
 	break;
 	case 'int':
-		if (!is_numeric($v))
-			$er[$id]='Invalid contents, not a number '.$v;
+		if (!is_numeric($v)) {
+			$er[$id]='Invalid value, not a number.';
+		}
 		$v=(int)$v;
 		if (isset($o['max_value']) && $v>$o['max_value'])
 			$er[$id]='Value too large: '.$v;
@@ -1034,7 +1114,16 @@ switch ($type) {
 return $v;
 }
 
-protected Function mapRequest(array $r, array &$er)
+/**
+ * map_request
+ *
+ * Maps the request values to drupal field.
+ * 
+ * @r	Request data
+ * @d	Old data to overwrite
+ * @er	Errors
+ */
+protected Function map_request(array $r, stdClass $d=null, array &$er)
 {
 foreach ($this->map as $df => $o) {
 	$id=$o['id'];
@@ -1046,7 +1135,7 @@ foreach ($this->map as $df => $o) {
 		foreach ($id as $tid => $dv) {
 			$fid=$o['vid'][$vididx];
 			if (is_null($dv)) {
-				$tmp=$this->mapVariable($r, $tid, $df, $o, $er);
+				$tmp=$this->map_variable($r, $tid, $df, $o, $d, $er);
 				if ($tmp===false || $tmp===true)
 					continue;
 				$v[$fid]=$tmp;
@@ -1059,8 +1148,8 @@ foreach ($this->map as $df => $o) {
 			$f[$df]=$v;
 	} else {
 		// 1:1
-		$v=$this->mapVariable($r, $id, $df, $o, $er);
-		if ($v===false || $v===true) // Skip or Error case, lets just collection any more errors
+		$v=$this->map_variable($r, $id, $df, $o, $d, $er);
+		if ($v===false || $v===true) // Skip or Error case, lets just collect any other errors
 			continue;
 		if (isset($o['field_id'])) {
 			$f[$df][$o['field_id']]=$v;

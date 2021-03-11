@@ -611,24 +611,50 @@ if (count($er)>0) {
 }
 
 $images=array();
+
 if (isset($data['imagerm']) && is_array($data['imagerm'])) {
-	slog('ImagesToRemove', $data['imagerm']);
-	foreach ($p->field_image as $oi) {
-		$fid=$oi->fid;
-		if (in_array("$fid", $data['imagerm'], true))
-			$images[]=array('fid'=>null);
-		else
-			$images[]=array('fid'=>(int)$oi->fid);
-	}
+	$tr=count($data['imagerm']);
+} else {
+	$tr=0;
 }
 if (is_array($files) && count($files)>0) {
-	$fer=array();
-	$fids=$this->addImagesFromUpload($files, $fer);
-	foreach ($fids as $fid) {
-		$images[]=array('fid'=>$fid, 'alt'=>$f['title']);
-	}
+	$ta=count($files);
+} else {
+	$ta=0;
 }
-$f['field_image']=$images;
+$ti=count($p->field_image);
+
+// Check if we have image changes (tr removals, ta additions) and if both are 0, don't bother with image field, at all.
+if ($tr>0 || $ta>0) {
+	// Make sure we have at least 1 image at the end, count removal and addtions and check it
+	if ($ti+$ta-$tr<=0)
+		throw new ProductErrorException('Product must have at least one image.', 400);
+
+	foreach ($p->field_image as $delta=>$oi) {
+		$images[$delta]=array('fid'=>(int)$oi->fid);
+	}
+
+	// Any images to remove ?
+	if ($tr>0) {
+		slog('ImagesToRemove', $data['imagerm']);
+		foreach ($p->field_image as $delta=>$oi) {
+			$fid=$oi->fid;
+			$images[$delta]=(in_array("$fid", $data['imagerm'], true)) ? array('fid'=>null) : array('fid'=>(int)$oi->fid);
+		}
+	}
+
+	// And images to add ?
+	if ($ta>0) {
+		$fer=array();
+		$fids=$this->addImagesFromUpload($files, $fer);
+		foreach ($fids as $fid) {
+			$images[]=array('fid'=>$fid, 'alt'=>$f['title']);
+		}
+	$ta=count($fids);
+	}
+
+	$f['field_image']=$images;
+}
 
 // Set revision log message
 $f['log']='API made modification';
@@ -643,6 +669,11 @@ if ($this->d->update_product($p->product_id, $f))
 return false;
 }
 
+/**
+ * fillProductImages
+ *
+ * Get the image details from Drupal response and make an array with the information we are interested in
+ */
 protected Function fillProductImages(array $images, $style)
 {
 $p=array();

@@ -672,6 +672,9 @@ $f['log']='API made modification';
 unset($f['sku']);
 unset($f['type']);
 
+// XXX: Handle update of price
+unset($f['commerce_price']);
+
 // Save and discard the result, and reload (as the update response is, well, f*d up
 if ($this->d->update_product($p->product_id, $f))
 	return $this->drupalJSONtoProduct($this->d->get_product($p->product_id));

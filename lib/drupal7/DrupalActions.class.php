@@ -208,7 +208,8 @@ private Function purposeMap($u)
 {
 if (array_key_exists($u, $this->umap))
         return $this->umap[$u];
-slog('Purpose taxonomy not found in map', json_encode($u));
+if (is_numeric($u))
+	slog('Purpose taxonomy not found in map', $u);
 return false;
 }
 
@@ -216,7 +217,8 @@ private Function purposeMapReverse($u)
 {
 if (array_key_exists($u, $this->umapr))
         return $this->umapr[$u];
-slog('Purpose taxonomy id not found in reverse map', json_encode($u));
+if (is_string($u))
+	slog('Purpose taxonomy id not found in reverse map', $u);
 return 0;
 }
 
@@ -279,10 +281,10 @@ return $ndata;
  */
 private Function colorMapReverse($c)
 {
-//slog('Color reverse mapping', $c);
 if (array_key_exists($c, $this->comapr))
 	return $this->comapr[$c]['cid'];
-slog('Color ID not found in map', $c);
+if (is_numeric($c))
+	slog('Color ID not found in map', $c);
 return false;
 }
 

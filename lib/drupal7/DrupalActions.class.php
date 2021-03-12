@@ -90,6 +90,14 @@ $this->map=array(
 	'type'=>'string',
 	'cb_map'=>'categoryMap'
 	),
+ 'commerce_price'=>array(
+	'id'=>'price',
+	'required'=>false,
+	'type'=>'string',
+	'default'=>0,
+	'type'=>'int',
+	'min_value'=>0
+	),
  'commerce_stock'=>array(
 	'id'=>'stock',
 	'required'=>false,
@@ -579,7 +587,8 @@ if (count($files)>0) {
 $f['log']='API added';
 
 // XXX: Client supports this now so... fix it!
-$price=0;
+$price=$f['commerce_price'];
+unset($f['commerce_price']);
 try {
 	$r=$this->create_product($f['type'], $f['sku'], $f['title'], $price, $f);
 	//throw new ProductErrorException('DevelException', 400);

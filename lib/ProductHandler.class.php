@@ -435,19 +435,21 @@ $this->checkAuth();
 
 $fer='';
 
+$data=Flight::request()->data->getData();
+
 try {
 	$rf=Flight::request()->files;
 	if (count($rf)===0) {
 		Response::json(400, 'Missing product images');
 		return;
 	}
-	$r=$this->api->add_product(Flight::request()->data->getData(), $rf['images'], $fer);
+	$r=$this->api->add_product($data, $rf['images'], $fer);
 	Response::json(201, 'Product add', array("response"=>$r, "file_errors"=>$fer));
 } catch (ProductExistsException $e) {
 	slog('SKU already exists', false);
 	Response::json(409, 'SKU already exists', array('error'=>$e->getMessage()));
 } catch (ProductException $e) {
-	slog('Invalid product data', false, $e);
+	slog('Invalid product data', $data, $e);
 	Response::json(400, 'Invalid product data', array('error'=>$e->getMessage()));
 }
 
@@ -465,7 +467,8 @@ if (!$this->api->validateBarcode($barcode)) {
 $data=Flight::request()->data->getData();
 
 try {
-	$r=$this->api->update_product($barcode, $data);
+	$rf=Flight::request()->files;
+	$r=$this->api->update_product($barcode, $data, count($rf)==0 ? null : $rf['images']);
 	Response::json(200, 'Product update', array("response"=>$r));
 } catch (ProductException $e) {
 	$data=array('error'=>$e->getMessage());

@@ -469,6 +469,21 @@ public function logout()
 return $this->d->logout();
 }
 
+public function log_auth(array $d)
+{
+try {
+    $dbh=new PDO($this->dsn, $this->dbuser, $this->dbpass);
+    $stmt=$dbh->prepare('INSERT INTO auth_log (username,client_version,client_locale,ip,dt) VALUES(?,?,?,?)');
+    $stmt->bindParam(1, $d['username']);
+    $stmt->bindParam(2, $d['client_version']);
+    $stmt->bindParam(3, $d['client_locale']);
+    $stmt->bindParam(2, $d['remote_ip']);
+    $r=$stmt->execute();
+} catch (PDOException $e) {
+    slog('Auth log failed',false,$e);
+}
+}
+
 public function auth_apikey($key)
 {
 try {

@@ -237,8 +237,8 @@ foreach ($c as $cid) {
 
 	if (array_key_exists($cid, $this->comap)) {
 		$r[]=$this->comap[$cid]['tid'];
-	} else {
-		// XXX: Log it only, don't fail
+	} else if (is_numeric($cid)) {
+		// If cid looks like a valid id but is not found, log it
 		slog('Color string not found in map', $cid);
 	}
 }
@@ -246,6 +246,9 @@ foreach ($c as $cid) {
 // Previous data needs to be cleared in case we remove any values
 if (is_array($p)) {
 	$r=$this->modify_data($r, $p);
+} else {
+	// For new items, make sure we don't have any empty ids
+	$r=array_filter($r);
 }
 
 return $r;

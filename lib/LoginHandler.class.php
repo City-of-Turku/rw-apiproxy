@@ -132,4 +132,9 @@ public function user($uid)
 Response::json(200, 'User data', $this->be->retrieve_user($uid));
 }
 
+public function addressbook()
+{
+Response::json(200, 'Addressbook', $this->be->get_addressbook());
+}
+
 } // class

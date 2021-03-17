@@ -91,6 +91,7 @@ Flight::route('GET /auth/user', array($l, 'userCurrent'));
 
 // User information
 Flight::route('GET /users/@id:[0-9]{1,6}', array($l, 'user'));
+Flight::route('GET /user/addressbook', array($l, 'addressbook'));
 
 /**
  * Product requests

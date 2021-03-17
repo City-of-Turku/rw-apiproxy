@@ -29,6 +29,9 @@ abstract public function get_locations();
 // Categories
 abstract public function get_categories();
 
+// User addressbook
+abstract public function get_addressbook();
+
 // Files (images)
 abstract public function upload_file($file, $filename=null);
 abstract public function view_file($fid, $data=false);

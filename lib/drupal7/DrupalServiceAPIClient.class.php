@@ -768,7 +768,7 @@ return json_decode($r, $assoc);
 }
 
 /******************************************************************
- * Custom endpoints (exmaple view service)
+ * Custom endpoints (example view service)
  ******************************************************************/
 
 public function retrieve_resource($name, $assoc = FALSE)

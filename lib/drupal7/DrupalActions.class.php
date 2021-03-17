@@ -525,6 +525,11 @@ public function get_categories()
 return false;
 }
 
+public function get_addressbook()
+{
+return $this->d->retrieve_resource('addressbook');
+}
+
 public function get_colors()
 {
 // Get custom view, in format:

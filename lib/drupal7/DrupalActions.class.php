@@ -469,6 +469,11 @@ public function logout()
 return $this->d->logout();
 }
 
+public function password($username)
+{
+return $this->d->password($username);
+}
+
 public function log_auth(array $d)
 {
 try {

@@ -13,6 +13,8 @@ define('AUTH_ANONYMOUS', 0);
 define('AUTH_BASIC', 1);
 define('AUTH_SESSION', 2);
 
+define('USERNAME_MAX_LENGTH', 60);
+
 class DrupalServiceException extends Exception { public $response; }
 class DrupalServiceNotFoundException extends DrupalServiceException { }
 class DrupalServiceAuthException extends DrupalServiceException { }
@@ -74,7 +76,7 @@ $this->currency=$c;
 
 public function set_auth($username, $password)
 {
-if (!is_string($username))
+if (!$this->validate_username($username))
 	throw new DrupalServiceException('Invalid username', 500);
 if (!is_string($password))
 	throw new DrupalServiceException('Invalid password', 500);
@@ -82,9 +84,35 @@ $this->username=$username;
 $this->password=$password;
 }
 
+/* Checks from Drupal 7 user_validate_name() */
+private function validate_username($name)
+{
+if (!is_string($name))
+	return false;
+if (substr($name, 0, 1) == ' ')
+	return false;
+if (substr($name, -1) == ' ')
+	return false;
+if (strpos($name, '  ') !== FALSE)
+	return false;
+if (preg_match('/[^\\x{80}-\\x{F7} a-z0-9@+_.\'-]/i', $name))
+	return false;
+if (preg_match('/[\\x{80}-\\x{A0}' . '\\x{AD}' . '\\x{2000}-\\x{200F}' . '\\x{2028}-\\x{202F}' . '\\x{205F}-\\x{206F}' . '\\x{FEFF}' . '\\x{FF01}-\\x{FF60}' . '\\x{FFF9}-\\x{FFFD}' . '\\x{0}-\\x{1F}]/u', $name))
+	return false;
+return true;
+}
+
 public function login()
 {
 return $this->login_session();
+}
+
+public function password($username)
+{
+if (!$this->validate_username($username))
+	throw new DrupalServiceException('Invalid username', 500);
+$r=$this->executePOST('file.json', $data);
+return json_decode($r);
 }
 
 public function set_debug($bool)

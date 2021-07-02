@@ -122,6 +122,25 @@ public function logout()
 Response::json(200, 'Logout OK');
 }
 
+public function password()
+{
+$r=Flight::request()->data;
+
+if (empty($r['username'])) {
+	throw new ResponseException('Password recovery operation missing required parameters', 403);
+}
+
+$username=$r['username'];
+
+try {
+	$u=$this->be->password($username);
+	Response::json(200, 'Password recovery OK', $u);
+} catch (Exception $e) {
+	slog("Recovery failure", 'password', $e);
+	Response::json(403, 'Password recovery failure', array('error'=>$e->getMessage()));
+}
+}
+
 public function userCurrent()
 {
 Response::json(200, 'User data');

@@ -87,6 +87,7 @@ Flight::route('GET /version', 'versionResponse');
  */
 Flight::route('POST /auth/login', array($l, 'login'));
 Flight::route('POST /auth/logout', array($l, 'logout'));
+Flight::route('POST /auth/password', array($l, 'password'));
 Flight::route('GET /auth/user', array($l, 'userCurrent'));
 
 // User information
